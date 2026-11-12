@@ -1,0 +1,1641 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SiKinerja AI - Asisten Dokumentasi Kinerja</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Identity Services (GIS) untuk Integrasi Live Google Drive -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#4f46e5',
+                            600: '#4338ca',
+                            700: '#3730a3',
+                            900: '#1e1b4b',
+                        },
+                        android: {
+                            bg: '#f4f6fa',
+                            card: '#ffffff',
+                            surface: '#eef2f6'
+                        }
+                    },
+                    boxShadow: {
+                        'android': '0 2px 10px -2px rgba(15, 23, 42, 0.06), 0 1px 3px -1px rgba(15, 23, 42, 0.04)',
+                        'nav': '0 -4px 20px -2px rgba(15, 23, 42, 0.08)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar & Native Android Feel */
+        body {
+            background-color: #e2e8f0;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        input, textarea, select {
+            user-select: text;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.8; }
+            100% { transform: scale(1.6); opacity: 0; }
+        }
+        .recording-pulse::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 9999px;
+            background-color: #ef4444;
+            animation: pulse-ring 1.25s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+            z-index: -1;
+        }
+
+        /* Print Styles for Laporan PDF */
+        @media print {
+            body {
+                background: white !important;
+            }
+            #app-shell {
+                max-width: 100% !important;
+                box-shadow: none !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            #print-area {
+                display: block !important;
+            }
+            .tab-content {
+                display: none !important;
+            }
+            #tab-riwayat {
+                display: block !important;
+                padding-bottom: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans text-slate-800 antialiased flex justify-center min-h-screen">
+
+    <!-- Mobile Android Frame Container -->
+    <div id="app-shell" class="w-full max-w-md bg-android-bg min-h-screen sm:min-h-[844px] sm:my-4 sm:rounded-[2.5rem] sm:border-[8px] sm:border-slate-900 shadow-2xl flex flex-col relative overflow-hidden">
+        
+        <!-- Android Status Bar Simulation (Desktop preview) -->
+        <div class="hidden sm:flex justify-between items-center px-6 pt-2 pb-1 bg-brand-700 text-white text-[11px] font-medium no-print">
+            <span id="status-clock">15:51</span>
+            <div class="w-20 h-4 bg-slate-900 rounded-full"></div>
+            <div class="flex items-center gap-1.5">
+                <i data-lucide="wifi" class="w-3.5 h-3.5"></i>
+                <i data-lucide="battery-charging" class="w-4 h-4"></i>
+            </div>
+        </div>
+
+        <!-- 1. TOP APP HEADER -->
+        <header class="bg-gradient-to-br from-brand-700 via-brand-600 to-indigo-600 text-white px-5 pt-4 pb-6 rounded-b-[1.75rem] shadow-md z-20 no-print">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <img src="https://placehold.co/96x96/e0e7ff/3730a3?text=ASN" 
+                             onerror="this.src='https://placehold.co/96x96/4338ca/ffffff?text=AI'" 
+                             alt="Profil Pegawai" 
+                             class="w-11 h-11 rounded-2xl object-cover border-2 border-white/40 shadow-sm">
+                        <span id="drive-indicator-dot" class="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-brand-700" title="Status Koneksi"></span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <h1 class="font-display font-bold text-lg tracking-tight leading-none">SiKinerja AI</h1>
+                            <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-white/20 text-white">v2.5</span>
+                        </div>
+                        <p id="header-user-info" class="text-xs text-indigo-100 mt-0.5">RIWANTO, SKM • Staf Renvalkeu Dinkes Kota Tegal</p>
+                    </div>
+                </div>
+
+                <!-- Tombol Pengaturan API -->
+                <button onclick="switchTab('pengaturan')" class="p-2.5 rounded-2xl bg-white/15 hover:bg-white/25 active:scale-95 transition flex items-center justify-center relative" title="Pengaturan Google Drive API">
+                    <i data-lucide="settings" class="w-5 h-5 text-white"></i>
+                </button>
+            </div>
+
+            <!-- Status Koneksi Google Drive Pill -->
+            <div class="flex items-center justify-between bg-black/20 backdrop-blur-sm rounded-2xl px-3.5 py-2 border border-white/10">
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <i data-lucide="hard-drive" id="drive-header-icon" class="w-4 h-4 text-amber-300 shrink-0"></i>
+                    <div class="truncate">
+                        <span id="drive-mode-badge" class="text-xs font-semibold text-white block truncate">Mode Simulasi / Demo Lokal</span>
+                        <span id="drive-account-sub" class="text-[10px] text-indigo-200 block truncate">Tersimpan di memori HP & simulasi struktur Drive</span>
+                    </div>
+                </div>
+                <button id="header-connect-btn" onclick="handleQuickDriveAction()" class="shrink-0 ml-2 text-[11px] font-semibold px-3 py-1.5 rounded-xl bg-white text-brand-700 hover:bg-indigo-50 active:scale-95 transition shadow-sm">
+                    Hubungkan
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN SCROLLABLE CONTENT AREA -->
+        <main class="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-28 space-y-4">
+
+            <!-- ========================================== -->
+            <!-- TAB 1: CATAT KINERJA                       -->
+            <!-- ========================================== -->
+            <section id="tab-catat" class="tab-content space-y-4">
+
+                <!-- 2. ASISTEN AI CERDAS (INPUT CEPAT TEKS / SUARA) -->
+                <div class="bg-white rounded-3xl p-4 shadow-android border border-indigo-100/80 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-indigo-100/60 to-transparent rounded-bl-full pointer-events-none"></div>
+                    
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
+                                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            </span>
+                            <div>
+                                <h2 class="font-display font-bold text-sm text-slate-800">Asisten AI Input Cepat</h2>
+                                <p class="text-[11px] text-slate-500">Ketik atau ucapkan kegiatan, AI otomatis isi formulir</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="fillExamplePrompt()" class="text-[11px] font-medium text-brand-600 bg-brand-50 px-2.5 py-1 rounded-lg hover:bg-brand-100 transition">
+                            Contoh
+                        </button>
+                    </div>
+
+                    <div class="relative mt-2">
+                        <textarea id="ai-prompt-input" rows="2" 
+                            class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 pr-24 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition resize-none"
+                            placeholder="Misal: Rapat koordinasi evaluasi program jam 9 pagi tadi..."></textarea>
+                        
+                        <div class="absolute right-2 bottom-2 flex items-center gap-1.5">
+                            <!-- Tombol Mic (Web Speech API) -->
+                            <button type="button" id="btn-voice-ai" onclick="toggleVoiceRecognition()" 
+                                class="relative w-9 h-9 rounded-xl bg-slate-200/80 hover:bg-slate-300 text-slate-700 flex items-center justify-center transition active:scale-90" 
+                                title="Bicara dengan Suara">
+                                <i data-lucide="mic" id="mic-icon" class="w-4 h-4"></i>
+                            </button>
+                            <!-- Tombol Proses AI -->
+                            <button type="button" onclick="parseWithAI()" 
+                                class="h-9 px-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition">
+                                <span>Ekstrak</span>
+                                <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="ai-status-feedback" class="hidden mt-2 text-xs px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5 shrink-0"></i>
+                        <span id="ai-status-text">Berhasil mengekstrak jadwal & kegiatan!</span>
+                    </div>
+                </div>
+
+                <!-- 3. FORM PENCATATAN KINERJA -->
+                <form id="kinerja-form" onsubmit="handleSaveKinerja(event)" class="bg-white rounded-3xl p-4 shadow-android border border-slate-100 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                        <h3 class="font-display font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <i data-lucide="clipboard-edit" class="w-4 h-4 text-brand-600"></i>
+                            Detail Log Kinerja
+                        </h3>
+                        <button type="button" onclick="resetCurrentTime()" class="text-[11px] text-slate-500 hover:text-brand-600 flex items-center gap-1">
+                            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Waktu Sekarang
+                        </button>
+                    </div>
+
+                    <!-- Tanggal & Jam -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal Kegiatan</label>
+                            <div class="relative">
+                                <input type="date" id="input-tanggal" required onchange="updateFolderPreview()"
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Jam Kegiatan</label>
+                            <div class="relative">
+                                <input type="time" id="input-jam" required onchange="refreshWatermarkIfPhotoExists()"
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kategori Kegiatan -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">Kategori Kinerja</label>
+                        <div class="grid grid-cols-2 gap-2" id="category-selector">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="kategori" value="Rapat/Koordinasi" class="peer sr-only" checked>
+                                <div class="p-2.5 rounded-2xl border border-slate-200 bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 text-slate-600 text-xs font-medium flex items-center gap-2 transition">
+                                    <i data-lucide="users" class="w-4 h-4 shrink-0"></i>
+                                    <span class="truncate">Rapat/Koordinasi</span>
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="kategori" value="Pelayanan/Lapangan" class="peer sr-only">
+                                <div class="p-2.5 rounded-2xl border border-slate-200 bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 text-slate-600 text-xs font-medium flex items-center gap-2 transition">
+                                    <i data-lucide="map-pin" class="w-4 h-4 shrink-0"></i>
+                                    <span class="truncate">Monitoring Simpus</span>
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="kategori" value="Penyusunan Dokumen" class="peer sr-only">
+                                <div class="p-2.5 rounded-2xl border border-slate-200 bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 text-slate-600 text-xs font-medium flex items-center gap-2 transition">
+                                    <i data-lucide="file-text" class="w-4 h-4 shrink-0"></i>
+                                    <span class="truncate">Penyusunan Dokumen</span>
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="kategori" value="Monitoring/Evaluasi" class="peer sr-only">
+                                <div class="p-2.5 rounded-2xl border border-slate-200 bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 text-slate-600 text-xs font-medium flex items-center gap-2 transition">
+                                    <i data-lucide="bar-chart-3" class="w-4 h-4 shrink-0"></i>
+                                    <span class="truncate">Monitoring/Evaluasi</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Nama / Uraian Kegiatan -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nama / Uraian Kegiatan <span class="text-rose-500">*</span></label>
+                        <textarea id="input-kegiatan" rows="2" required oninput="refreshWatermarkIfPhotoExists()"
+                            placeholder="Tuliskan deskripsi singkat output/kegiatan yang dilaksanakan..."
+                            class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition"></textarea>
+                    </div>
+
+                    <!-- Bukti Dukung Foto Kegiatan dengan Auto Watermark -->
+                    <div class="pt-1">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
+                                <i data-lucide="camera" class="w-3.5 h-3.5 text-brand-600"></i>
+                                Bukti Foto (Auto-Watermark)
+                            </label>
+                            <span class="text-[10px] bg-indigo-50 text-brand-700 font-semibold px-2 py-0.5 rounded-md">Timestamp Aktif</span>
+                        </div>
+
+                        <!-- Hidden Inputs untuk Kamera & Galeri -->
+                        <input type="file" id="photo-camera-input" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelected(event)">
+                        <input type="file" id="photo-gallery-input" accept="image/*" class="hidden" onchange="handlePhotoSelected(event)">
+
+                        <!-- Tombol Pilih Sumber Foto -->
+                        <div id="photo-upload-buttons" class="grid grid-cols-2 gap-2.5">
+                            <button type="button" onclick="document.getElementById('photo-camera-input').click()" 
+                                class="py-3 px-3 rounded-2xl border-2 border-dashed border-brand-300 bg-brand-50/50 hover:bg-brand-50 text-brand-700 flex flex-col items-center justify-center gap-1 active:scale-95 transition">
+                                <i data-lucide="camera" class="w-5 h-5"></i>
+                                <span class="text-xs font-semibold">Buka Kamera</span>
+                            </button>
+                            <button type="button" onclick="document.getElementById('photo-gallery-input').click()" 
+                                class="py-3 px-3 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 flex flex-col items-center justify-center gap-1 active:scale-95 transition">
+                                <i data-lucide="image" class="w-5 h-5"></i>
+                                <span class="text-xs font-semibold">Pilih Galeri</span>
+                            </button>
+                        </div>
+
+                        <!-- Preview Foto Ter-Watermark -->
+                        <div id="photo-preview-container" class="hidden mt-2 relative rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-slate-900">
+                            <img id="watermarked-preview-img" src="" alt="Preview Bukti Foto" class="w-full max-h-64 object-contain mx-auto">
+                            <div class="absolute top-2 right-2 flex gap-1.5">
+                                <button type="button" onclick="removePhoto()" class="p-2 rounded-xl bg-rose-600/90 text-white hover:bg-rose-700 shadow-md backdrop-blur-sm" title="Hapus Foto">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <div class="bg-slate-900/90 text-white px-3 py-1.5 text-[11px] flex items-center justify-between">
+                                <span class="flex items-center gap-1 text-emerald-400 font-medium">
+                                    <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Watermark tanggal & kegiatan terpasang
+                                </span>
+                                <span id="photo-size-label" class="text-slate-400">JPG</span>
+                            </div>
+                        </div>
+                        <!-- Canvas tersembunyi untuk merender watermark -->
+                        <canvas id="watermark-canvas" class="hidden"></canvas>
+                    </div>
+
+                    <!-- Bukti Dukung Dokumen -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1.5 flex items-center gap-1.5">
+                            <i data-lucide="paperclip" class="w-3.5 h-3.5 text-brand-600"></i>
+                            Bukti Dukung Dokumen (PDF / DOCX / XLSX)
+                        </label>
+                        <input type="file" id="doc-file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" class="hidden" onchange="handleDocSelected(event)">
+                        
+                        <div id="doc-dropzone" onclick="document.getElementById('doc-file-input').click()" 
+                            class="cursor-pointer rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-100 p-3 flex items-center justify-between transition">
+                            <div class="flex items-center gap-2.5 overflow-hidden">
+                                <div class="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 shrink-0">
+                                    <i data-lucide="file-up" class="w-4 h-4"></i>
+                                </div>
+                                <div class="truncate">
+                                    <p id="doc-filename-display" class="text-xs font-semibold text-slate-700 truncate">Lampirkan File Dokumen (Opsional)</p>
+                                    <p id="doc-filesize-display" class="text-[10px] text-slate-400">Notulensi, Surat Tugas, Laporan, Rekap Excel</p>
+                                </div>
+                            </div>
+                            <span id="doc-action-badge" class="text-[11px] font-semibold text-brand-600 bg-brand-50 px-2.5 py-1 rounded-xl shrink-0">Pilih</span>
+                        </div>
+                    </div>
+
+                    <!-- 4. VISUALISASI STRUKTUR FOLDER OTOMATIS GOOGLE DRIVE -->
+                    <div class="bg-slate-900 text-slate-100 rounded-2xl p-3.5 space-y-2 border border-slate-800">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-semibold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                                <i data-lucide="folder-tree" class="w-3.5 h-3.5"></i>
+                                Target Folder Google Drive
+                            </span>
+                            <span id="folder-sync-tag" class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-medium">Auto-Create</span>
+                        </div>
+                        
+                        <!-- Hierarki Tree Visual -->
+                        <div class="font-mono text-[11px] bg-black/40 rounded-xl p-2.5 space-y-1 text-slate-300 overflow-x-auto">
+                            <div class="flex items-center gap-1.5 text-slate-400">
+                                <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-blue-400 shrink-0"></i>
+                                <span>My Drive / <strong class="text-white">Kinerja_Harian</strong></span>
+                            </div>
+                            <div class="flex items-center gap-1.5 pl-4 text-slate-400">
+                                <span>└──</span>
+                                <i data-lucide="folder" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
+                                <span id="tree-year">2026</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 pl-8 text-slate-400">
+                                <span>└──</span>
+                                <i data-lucide="folder" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
+                                <span id="tree-month">11_November</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 pl-12 text-emerald-400 font-semibold">
+                                <span>└──</span>
+                                <i data-lucide="folder-open" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
+                                <span id="tree-date">2026-11-12/</span>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-slate-400 leading-relaxed">
+                            Foto & dokumen akan otomatis diorganisir ke folder tanggal di atas saat disimpan.
+                        </p>
+                    </div>
+
+                    <!-- Tombol Simpan Utama -->
+                    <button type="submit" id="btn-submit-kinerja" 
+                        class="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-display font-bold text-sm shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 active:scale-[0.98] transition">
+                        <i data-lucide="cloud-upload" class="w-5 h-5"></i>
+                        <span id="btn-submit-text">Simpan & Arsipkan ke Drive</span>
+                    </button>
+                </form>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- TAB 2: RIWAYAT & REKAP KINERJA             -->
+            <!-- ========================================== -->
+            <section id="tab-riwayat" class="tab-content hidden space-y-4">
+                
+                <!-- Ringkasan Statistik Cepat -->
+                <div class="grid grid-cols-3 gap-2.5 no-print">
+                    <div class="bg-white p-3 rounded-2xl shadow-android border border-slate-100 text-center">
+                        <span id="stat-total" class="font-display font-extrabold text-xl text-brand-600 block">0</span>
+                        <span class="text-[11px] font-medium text-slate-500">Total Kegiatan</span>
+                    </div>
+                    <div class="bg-white p-3 rounded-2xl shadow-android border border-slate-100 text-center">
+                        <span id="stat-foto" class="font-display font-extrabold text-xl text-emerald-600 block">0</span>
+                        <span class="text-[11px] font-medium text-slate-500">Bukti Foto</span>
+                    </div>
+                    <div class="bg-white p-3 rounded-2xl shadow-android border border-slate-100 text-center">
+                        <span id="stat-drive" class="font-display font-extrabold text-xl text-blue-600 block">0</span>
+                        <span class="text-[11px] font-medium text-slate-500">Sync Drive</span>
+                    </div>
+                </div>
+
+                <!-- Filter Tanggal & Tombol Export -->
+                <div class="bg-white p-3.5 rounded-3xl shadow-android border border-slate-100 space-y-3 no-print">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Filter Tanggal</label>
+                            <div class="flex items-center gap-1.5">
+                                <input type="date" id="filter-tanggal" onchange="renderHistoryList()" 
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <button type="button" onclick="clearDateFilter()" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold shrink-0">
+                                    Semua
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tombol Export CSV & Print PDF -->
+                    <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+                        <button type="button" onclick="exportToCSV()" class="py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                            Export CSV (Excel)
+                        </button>
+                        <button type="button" onclick="window.print()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                            <i data-lucide="printer" class="w-4 h-4"></i>
+                            Cetak / PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Header Khusus Saat Dicetak (Print PDF) -->
+                <div class="hidden print:block mb-4 border-b-2 border-slate-800 pb-3">
+                    <h1 class="text-lg font-bold">LAPORAN DOKUMENTASI KINERJA HARIAN</h1>
+                    <p class="text-xs text-slate-600" id="print-subtitle">Dicetak melalui SiKinerja AI</p>
+                </div>
+
+                <!-- Daftar Log Kinerja -->
+                <div id="history-list-container" class="space-y-3">
+                    <!-- Item dirender lewat JavaScript -->
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- TAB 3: PENGATURAN GOOGLE DRIVE API & PROFIL-->
+            <!-- ========================================== -->
+            <section id="tab-pengaturan" class="tab-content hidden space-y-4">
+                
+                <!-- Pengaturan Profil Pegawai -->
+                <div class="bg-white rounded-3xl p-4 shadow-android border border-slate-100 space-y-3">
+                    <h3 class="font-display font-bold text-sm text-slate-800 flex items-center gap-2">
+                        <i data-lucide="user-cog" class="w-4 h-4 text-brand-600"></i>
+                        Identitas Pegawai (Untuk Watermark & Laporan)
+                    </h3>
+                    <div class="space-y-2.5">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap & Gelar</label>
+                            <input type="text" id="set-nama" value="RIWANTO, SKM" 
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Jabatan / Unit Kerja</label>
+                            <input type="text" id="set-jabatan" value="Staf Renvalkeu Dinkes Kota Tegal" 
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800">
+                        </div>
+                        <button type="button" onclick="saveProfileSettings()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold transition">
+                            Simpan Profil
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Konfigurasi Live Google Drive API v3 -->
+                <div class="bg-white rounded-3xl p-4 shadow-android border border-slate-100 space-y-3">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="font-display font-bold text-sm text-slate-800 flex items-center gap-2">
+                                <i data-lucide="cloud" class="w-4 h-4 text-blue-600"></i>
+                                Integrasi Google Drive API v3
+                            </h3>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Hubungkan Google Cloud OAuth Client ID untuk upload langsung ke Drive pribadi Anda.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50/80 border border-blue-100 rounded-2xl p-3 text-[11px] text-blue-900 space-y-1">
+                        <p class="font-semibold flex items-center gap-1">
+                            <i data-lucide="info" class="w-3.5 h-3.5 text-blue-600"></i> Cara Aktivasi Mode Live Drive:
+                        </p>
+                        <ol class="list-decimal pl-4 space-y-0.5 text-blue-800">
+                            <li>Buka Google Cloud Console & aktifkan <strong>Google Drive API</strong>.</li>
+                            <li>Buat kredensial <strong>OAuth 2.0 Client ID</strong> (Web Application).</li>
+                            <li>Tambahkan origin URL aplikasi ini ke <em>Authorized JavaScript origins</em>.</li>
+                            <li>Tempel Client ID di bawah lalu klik <strong>Otorisasi Google Drive</strong>.</li>
+                        </ol>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Google OAuth 2.0 Client ID</label>
+                        <input type="text" id="set-client-id" 
+                            placeholder="1234567890-abcdefg.apps.googleusercontent.com"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" value="556526035426-t2vnmgcdnhccmcmddggr6mgdhh1j4s0m.apps.googleusercontent.com">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button type="button" onclick="saveClientIdAndConnect()" 
+                            class="py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition">
+                            <i data-lucide="log-in" class="w-4 h-4"></i>
+                            Otorisasi Drive
+                        </button>
+                        <button type="button" onclick="disconnectGoogleDrive()" 
+                            class="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                            <i data-lucide="power-off" class="w-4 h-4"></i>
+                            Mode Simulasi
+                        </button>
+                    </div>
+
+                    <div id="oauth-status-box" class="text-[11px] p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600">
+                        Status saat ini: <strong>Mode Simulasi Lokal</strong> (Belum terhubung token OAuth aktif).
+                    </div>
+                </div>
+
+                <!-- Reset Data Demo -->
+                <div class="bg-white rounded-3xl p-4 shadow-android border border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-800">Bersihkan Cache Lokal</h4>
+                        <p class="text-[11px] text-slate-500">Hapus seluruh data riwayat demo di browser ini</p>
+                    </div>
+                    <button type="button" onclick="clearAllLocalData()" class="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold transition">
+                        Reset Data
+                    </button>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- TOAST NOTIFICATION (Pengganti alert() native) -->
+        <div id="toast-container" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm pointer-events-none flex flex-col gap-2"></div>
+
+        <!-- LOADING OVERLAY UNTUK UPLOAD GOOGLE DRIVE -->
+        <div id="upload-overlay" class="hidden absolute inset-0 bg-slate-900/75 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6 text-center text-white">
+            <div class="w-16 h-16 rounded-3xl bg-white/10 border border-white/20 flex items-center justify-center mb-4 animate-bounce">
+                <i data-lucide="cloud-upload" class="w-8 h-8 text-indigo-300"></i>
+            </div>
+            <h3 id="upload-overlay-title" class="font-display font-bold text-base">Mengarsipkan ke Google Drive...</h3>
+            <p id="upload-overlay-step" class="text-xs text-indigo-200 mt-1 max-w-xs">Membuat struktur folder /Kinerja_Harian/2026/...</p>
+            <div class="w-48 h-1.5 bg-white/20 rounded-full overflow-hidden mt-4">
+                <div id="upload-progress-bar" class="h-full bg-emerald-400 w-1/3 transition-all duration-300"></div>
+            </div>
+        </div>
+
+        <!-- BOTTOM NAVIGATION BAR KHAS ANDROID -->
+        <nav class="absolute bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-4 py-2 shadow-nav z-30 no-print">
+            <div class="grid grid-cols-3 gap-1">
+                <button type="button" onclick="switchTab('catat')" id="nav-catat" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-2xl text-brand-600 transition">
+                    <div class="nav-pill px-4 py-1 rounded-full bg-brand-100 transition-colors">
+                        <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                    </div>
+                    <span class="text-[11px] font-bold mt-1">Catat</span>
+                </button>
+
+                <button type="button" onclick="switchTab('riwayat')" id="nav-riwayat" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-2xl text-slate-500 hover:text-slate-800 transition">
+                    <div class="nav-pill px-4 py-1 rounded-full bg-transparent transition-colors relative">
+                        <i data-lucide="history" class="w-5 h-5"></i>
+                        <span id="nav-badge-count" class="hidden absolute -top-0.5 right-2 w-4 h-4 rounded-full bg-brand-600 text-white text-[9px] font-bold flex items-center justify-center">0</span>
+                    </div>
+                    <span class="text-[11px] font-semibold mt-1">Riwayat</span>
+                </button>
+
+                <button type="button" onclick="switchTab('pengaturan')" id="nav-pengaturan" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-2xl text-slate-500 hover:text-slate-800 transition">
+                    <div class="nav-pill px-4 py-1 rounded-full bg-transparent transition-colors">
+                        <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
+                    </div>
+                    <span class="text-[11px] font-semibold mt-1">API Drive</span>
+                </button>
+            </div>
+        </nav>
+
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- JAVASCRIPT LOGIC: AI PARSER, WATERMARK CANVAS & GOOGLE DRIVE API v3   -->
+    <!-- ===================================================================== -->
+    <script>
+        // -------------------------------------------------------------------
+        // 1. STATE & KONSTANTA APLIKASI
+        // -------------------------------------------------------------------
+        const STORAGE_KEY_LOGS = 'sikinerja_ai_logs_v1';
+        const STORAGE_KEY_CONFIG = 'sikinerja_ai_config_v1';
+
+        const NAMA_BULAN = [
+            '01_Januari', '02_Februari', '03_Maret', '04_April',
+            '05_Mei', '06_Juni', '07_Juli', '08_Agustus',
+            '09_September', '10_Oktober', '11_November', '12_Desember'
+        ];
+
+        let appState = {
+            profile: {
+                nama: 'RIWANTO, SKM',
+                jabatan: 'Staf Renvalkeu Dinkes'
+            },
+            drive: {
+                clientId: '',
+                accessToken: null,
+                tokenExpiry: 0,
+                isLive: false
+            },
+            currentPhoto: {
+                rawFile: null,
+                watermarkedDataUrl: null,
+                watermarkedBlob: null,
+                filename: ''
+            },
+            currentDoc: {
+                rawFile: null,
+                filename: '',
+                sizeText: ''
+            },
+            logs: []
+        };
+
+        let tokenClient = null;
+        let recognition = null;
+        let isRecording = false;
+
+        // -------------------------------------------------------------------
+        // 2. INISIALISASI SAAT HALAMAN DIMUAT
+        // -------------------------------------------------------------------
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadPersistedState();
+            resetCurrentTime();
+            updateFolderPreview();
+            initSpeechRecognition();
+            renderHistoryList();
+            updateStatusClock();
+            setInterval(updateStatusClock, 30000);
+        });
+
+        function updateStatusClock() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const clockEl = document.getElementById('status-clock');
+            if (clockEl) clockEl.textContent = `${hh}:${mm}`;
+        }
+
+        function loadPersistedState() {
+            try {
+                const savedConfig = JSON.parse(localStorage.getItem(STORAGE_KEY_CONFIG));
+                if (savedConfig) {
+                    if (savedConfig.profile) appState.profile = savedConfig.profile;
+                    if (savedConfig.clientId) appState.drive.clientId = savedConfig.clientId;
+                }
+
+                document.getElementById('set-nama').value = appState.profile.nama;
+                document.getElementById('set-jabatan').value = appState.profile.jabatan;
+                document.getElementById('set-client-id').value = appState.drive.clientId;
+                updateHeaderProfileUI();
+
+                const savedLogs = JSON.parse(localStorage.getItem(STORAGE_KEY_LOGS));
+                if (Array.isArray(savedLogs) && savedLogs.length > 0) {
+                    appState.logs = savedLogs;
+                } else {
+                    // Seed 1 contoh data awal agar riwayat langsung informatif
+                    const todayStr = getTodayDateString();
+                    appState.logs = [{
+                        id: 'demo-init-1',
+                        tanggal: todayStr,
+                        jam: '08:30',
+                        kategori: 'Rapat/Koordinasi',
+                        kegiatan: 'Apel pagi dan koordinasi pembagian tugas evaluasi triwulan IV',
+                        folderPath: buildFolderPathInfo(todayStr).fullPath,
+                        photoDataUrl: null,
+                        photoName: '20261112_0830_apel_pagi.jpg',
+                        docName: 'Notulensi_Rapat_Triwulan.pdf',
+                        syncMode: 'Simulasi',
+                        driveFolderUrl: null,
+                        createdAt: new Date().toISOString()
+                    }];
+                    saveLogsToLocal();
+                }
+            } catch (e) {
+                console.error('Gagal memuat state lokal:', e);
+            }
+        }
+
+        function saveConfigToLocal() {
+            localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify({
+                profile: appState.profile,
+                clientId: appState.drive.clientId
+            }));
+        }
+
+        function saveLogsToLocal() {
+            try {
+                // Simpan maksimal 30 log terakhir beserta thumbnail terkompresi agar tidak melebihi kuota localStorage
+                localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(appState.logs.slice(0, 30)));
+            } catch (e) {
+                // Jika kuota penuh karena banyak foto base64, simpan tanpa foto base64 untuk item lama
+                const lightLogs = appState.logs.map((item, idx) => idx > 4 ? { ...item, photoDataUrl: null } : item);
+                localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(lightLogs));
+            }
+            updateNavBadge();
+        }
+
+        function updateHeaderProfileUI() {
+            document.getElementById('header-user-info').textContent = `${appState.profile.nama} • ${appState.profile.jabatan}`;
+        }
+
+        function saveProfileSettings() {
+            const nama = document.getElementById('set-nama').value.trim();
+            const jabatan = document.getElementById('set-jabatan').value.trim();
+            if (!nama) {
+                showToast('Nama pegawai tidak boleh kosong.', 'error');
+                return;
+            }
+            appState.profile.nama = nama;
+            appState.profile.jabatan = jabatan || 'Pegawai';
+            saveConfigToLocal();
+            updateHeaderProfileUI();
+            refreshWatermarkIfPhotoExists();
+            showToast('Profil pegawai berhasil diperbarui!', 'success');
+        }
+
+        // -------------------------------------------------------------------
+        // 3. NAVIGASI TAB ANDROID BOTTOM BAR
+        // -------------------------------------------------------------------
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-brand-600');
+                btn.classList.add('text-slate-500');
+                btn.querySelector('.nav-pill').classList.remove('bg-brand-100');
+                btn.querySelector('.nav-pill').classList.add('bg-transparent');
+            });
+
+            const activeBtn = document.getElementById(`nav-${tabName}`);
+            activeBtn.classList.remove('text-slate-500');
+            activeBtn.classList.add('text-brand-600');
+            activeBtn.querySelector('.nav-pill').classList.remove('bg-transparent');
+            activeBtn.querySelector('.nav-pill').classList.add('bg-brand-100');
+
+            if (tabName === 'riwayat') {
+                renderHistoryList();
+            }
+        }
+
+        function updateNavBadge() {
+            const badge = document.getElementById('nav-badge-count');
+            if (appState.logs.length > 0) {
+                badge.textContent = appState.logs.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // -------------------------------------------------------------------
+        // 4. ASISTEN AI CERDAS (NLP BAHASA INDONESIA + WEB SPEECH API)
+        // -------------------------------------------------------------------
+        function fillExamplePrompt() {
+            const examples = [
+                "Rapat koordinasi evaluasi program jam 9 pagi tadi",
+                "Pelayanan verifikasi berkas masyarakat di loket terpadu pukul 10.30",
+                "Penyusunan dokumen laporan realisasi anggaran bulan ini jam 14:15",
+                "Monitoring dan evaluasi lapangan proyek infrastruktur kemarin jam 11 siang"
+            ];
+            const randomPrompt = examples[Math.floor(Math.random() * examples.length)];
+            document.getElementById('ai-prompt-input').value = randomPrompt;
+            parseWithAI();
+        }
+
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) return;
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'id-ID';
+            recognition.continuous = false;
+            recognition.interimResults = true;
+
+            recognition.onstart = () => {
+                isRecording = true;
+                const btn = document.getElementById('btn-voice-ai');
+                btn.classList.remove('bg-slate-200/80', 'text-slate-700');
+                btn.classList.add('bg-rose-500', 'text-white', 'recording-pulse');
+                showToast('Silakan bicara dalam Bahasa Indonesia...', 'info');
+            };
+
+            recognition.onresult = (event) => {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    transcript += event.results[i][0].transcript;
+                }
+                document.getElementById('ai-prompt-input').value = transcript;
+            };
+
+            recognition.onerror = (event) => {
+                stopVoiceUI();
+                showToast('Gagal menangkap suara: ' + event.error, 'error');
+            };
+
+            recognition.onend = () => {
+                stopVoiceUI();
+                const text = document.getElementById('ai-prompt-input').value.trim();
+                if (text) {
+                    parseWithAI();
+                }
+            };
+        }
+
+        function toggleVoiceRecognition() {
+            if (!recognition) {
+                showToast('Browser Anda belum mendukung fitur suara (Web Speech API). Silakan ketik manual.', 'error');
+                return;
+            }
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    recognition.stop();
+                }
+            }
+        }
+
+        function stopVoiceUI() {
+            isRecording = false;
+            const btn = document.getElementById('btn-voice-ai');
+            btn.classList.add('bg-slate-200/80', 'text-slate-700');
+            btn.classList.remove('bg-rose-500', 'text-white', 'recording-pulse');
+        }
+
+        /**
+         * Mengekstrak Tanggal, Jam, Kategori, dan Nama Kegiatan dari kalimat bebas bahasa Indonesia
+         */
+        function parseWithAI() {
+            const rawText = document.getElementById('ai-prompt-input').value.trim();
+            if (!rawText) {
+                showToast('Ketik atau ucapkan aktivitas terlebih dahulu.', 'error');
+                return;
+            }
+
+            const lower = rawText.toLowerCase();
+            const now = new Date();
+            let targetDate = new Date(now);
+
+            // 1. Ekstraksi Tanggal Relatif
+            if (lower.includes('kemarin lusa')) {
+                targetDate.setDate(now.getDate() - 2);
+            } else if (lower.includes('kemarin')) {
+                targetDate.setDate(now.getDate() - 1);
+            } else if (lower.includes('besok')) {
+                targetDate.setDate(now.getDate() + 1);
+            }
+
+            const yyyy = targetDate.getFullYear();
+            const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(targetDate.getDate()).padStart(2, '0');
+            const formattedDate = `${yyyy}-${mm}-${dd}`;
+
+            // 2. Ekstraksi Jam (misal: "jam 9 pagi", "pukul 14.30", "jam 2 siang", "09:15")
+            let formattedTime = null;
+            const timeRegex = /(?:jam|pukul)?\s*(\d{1,2})(?:[:.](\d{2}))?\s*(pagi|siang|sore|malam)?/gi;
+            let match;
+            while ((match = timeRegex.exec(lower)) !== null) {
+                // Pastikan angka diikuti kata waktu atau diawali jam/pukul atau memakai titik/titik dua
+                const fullMatch = match[0].trim();
+                const hasPrefix = fullMatch.startsWith('jam') || fullMatch.startsWith('pukul');
+                const hasMinute = Boolean(match[2]);
+                const hasPeriod = Boolean(match[3]);
+
+                if (hasPrefix || hasMinute || hasPeriod) {
+                    let hour = parseInt(match[1], 10);
+                    let minute = match[2] ? parseInt(match[2], 10) : 0;
+                    const period = match[3];
+
+                    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+                        if (period === 'siang' && hour >= 1 && hour <= 5) hour += 12;
+                        if (period === 'sore' && hour >= 1 && hour <= 7) hour += 12;
+                        if (period === 'malam' && hour >= 1 && hour <= 11) hour += 12;
+                        if (period === 'pagi' && hour === 12) hour = 0;
+
+                        formattedTime = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                        break;
+                    }
+                }
+            }
+
+            // 3. Klasifikasi Kategori Otomatis
+            let detectedCategory = 'Rapat/Koordinasi';
+            if (/(pelayanan|lapangan|kunjungan|survei|masyarakat|loket|warga|inspeksi)/.test(lower)) {
+                detectedCategory = 'Pelayanan/Lapangan';
+            } else if (/(dokumen|laporan|surat|notulensi|menyusun|penyusunan|draft|proposal|rekap|input)/.test(lower)) {
+                detectedCategory = 'Penyusunan Dokumen';
+            } else if (/(monitoring|evaluasi|monev|pengawasan|audit|penilaian|verifikasi)/.test(lower)) {
+                detectedCategory = 'Monitoring/Evaluasi';
+            } else if (/(rapat|koordinasi|briefing|zoom|meeting|diskusi|audiensi)/.test(lower)) {
+                detectedCategory = 'Rapat/Koordinasi';
+            }
+
+            // 4. Bersihkan Nama Kegiatan dari keterangan waktu agar rapi
+            let cleanActivity = rawText
+                .replace(/(?:pada\s+)?(?:hari\s+)?(?:kemarin\s+lusa|kemarin|hari\s+ini|tadi)/gi, '')
+                .replace(/(?:pada\s+)?(?:jam|pukul)\s*\d{1,2}(?:[:.]\d{2})?\s*(?:pagi|siang|sore|malam|wib|wita|wit)?/gi, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            if (cleanActivity.length > 0) {
+                cleanActivity = cleanActivity.charAt(0).toUpperCase() + cleanActivity.slice(1);
+            } else {
+                cleanActivity = rawText;
+            }
+
+            // Terapkan ke Form
+            document.getElementById('input-tanggal').value = formattedDate;
+            if (formattedTime) {
+                document.getElementById('input-jam').value = formattedTime;
+            }
+            document.getElementById('input-kegiatan').value = cleanActivity;
+
+            const radioEl = document.querySelector(`input[name="kategori"][value="${detectedCategory}"]`);
+            if (radioEl) radioEl.checked = true;
+
+            updateFolderPreview();
+            refreshWatermarkIfPhotoExists();
+
+            // Tampilkan feedback visual
+            const feedbackEl = document.getElementById('ai-status-feedback');
+            const feedbackText = document.getElementById('ai-status-text');
+            feedbackText.textContent = `Terisi: ${formattedDate}${formattedTime ? ' • ' + formattedTime : ''} (${detectedCategory})`;
+            feedbackEl.classList.remove('hidden');
+            showToast('AI berhasil mengisi formulir kinerja!', 'success');
+        }
+
+        // -------------------------------------------------------------------
+        // 5. PENGELOLAAN TANGGAL & STRUKTUR FOLDER GOOGLE DRIVE
+        // -------------------------------------------------------------------
+        function getTodayDateString() {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function resetCurrentTime() {
+            const now = new Date();
+            document.getElementById('input-tanggal').value = getTodayDateString();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('input-jam').value = `${hh}:${min}`;
+            updateFolderPreview();
+            refreshWatermarkIfPhotoExists();
+        }
+
+        function buildFolderPathInfo(dateStr) {
+            const safeDate = dateStr || getTodayDateString();
+            const parts = safeDate.split('-');
+            const year = parts[0] || '2026';
+            const monthIdx = Math.max(0, Math.min(11, parseInt(parts[1] || '11', 10) - 1));
+            const monthFolder = NAMA_BULAN[monthIdx];
+            return {
+                root: 'Kinerja_Harian',
+                year: year,
+                month: monthFolder,
+                date: safeDate,
+                fullPath: `/Kinerja_Harian/${year}/${monthFolder}/${safeDate}/`
+            };
+        }
+
+        function updateFolderPreview() {
+            const dateVal = document.getElementById('input-tanggal').value;
+            const info = buildFolderPathInfo(dateVal);
+            document.getElementById('tree-year').textContent = info.year;
+            document.getElementById('tree-month').textContent = info.month;
+            document.getElementById('tree-date').textContent = `${info.date}/`;
+        }
+
+        // -------------------------------------------------------------------
+        // 6. KAMERA / GALERI & AUTO-WATERMARKING PADA CANVAS
+        // -------------------------------------------------------------------
+        function handlePhotoSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            appState.currentPhoto.rawFile = file;
+            applyWatermarkToPhoto(file);
+        }
+
+        function refreshWatermarkIfPhotoExists() {
+            if (appState.currentPhoto.rawFile) {
+                applyWatermarkToPhoto(appState.currentPhoto.rawFile);
+            }
+        }
+
+        function applyWatermarkToPhoto(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.getElementById('watermark-canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    // Resize proporsional maks 1280px agar cepat & tajam saat upload ke Drive
+                    const MAX_DIM = 1280;
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > MAX_DIM || height > MAX_DIM) {
+                        if (width > height) {
+                            height = Math.round((height * MAX_DIM) / width);
+                            width = MAX_DIM;
+                        } else {
+                            width = Math.round((width * MAX_DIM) / height);
+                            height = MAX_DIM;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    // Gambar foto asli
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Siapkan teks watermark
+                    const tanggal = document.getElementById('input-tanggal').value || getTodayDateString();
+                    const jam = document.getElementById('input-jam').value || '09:00';
+                    const kegiatan = document.getElementById('input-kegiatan').value.trim() || 'Dokumentasi Kegiatan Harian';
+                    const kategori = document.querySelector('input[name="kategori"]:checked')?.value || 'Kinerja';
+                    const pegawai = `${appState.profile.nama} (${appState.profile.jabatan})`;
+
+                    // Overlay gradien gelap di bagian bawah foto
+                    const bannerHeight = Math.max(115, Math.round(height * 0.22));
+                    const grad = ctx.createLinearGradient(0, height - bannerHeight - 20, 0, height);
+                    grad.addColorStop(0, 'rgba(15, 23, 42, 0)');
+                    grad.addColorStop(0.25, 'rgba(15, 23, 42, 0.78)');
+                    grad.addColorStop(1, 'rgba(15, 23, 42, 0.94)');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, height - bannerHeight - 20, width, bannerHeight + 20);
+
+                    // Garis aksen vertikal di kiri teks
+                    const pad = Math.round(width * 0.03);
+                    const fontSizeMain = Math.max(16, Math.round(width * 0.026));
+                    const fontSizeSub = Math.max(13, Math.round(width * 0.020));
+                    const fontSizeSmall = Math.max(11, Math.round(width * 0.017));
+
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.fillRect(pad, height - bannerHeight + 8, 5, bannerHeight - 22);
+
+                    const textX = pad + 16;
+                    let textY = height - bannerHeight + 12 + fontSizeMain;
+
+                    // Baris 1: Tanggal & Jam + Kategori
+                    ctx.font = `bold ${fontSizeMain}px Inter, sans-serif`;
+                    ctx.fillStyle = '#fde047';
+                    ctx.fillText(`📅 ${tanggal}  ⏰ ${jam} WIB  •  ${kategori}`, textX, textY);
+
+                    // Baris 2: Nama Kegiatan (potong jika terlalu panjang)
+                    textY += fontSizeSub + 10;
+                    ctx.font = `600 ${fontSizeSub}px Inter, sans-serif`;
+                    ctx.fillStyle = '#ffffff';
+                    const maxChars = Math.floor((width - textX - pad) / (fontSizeSub * 0.55));
+                    const shortKegiatan = kegiatan.length > maxChars ? kegiatan.substring(0, maxChars - 3) + '...' : kegiatan;
+                    ctx.fillText(shortKegiatan, textX, textY);
+
+                    // Baris 3: Identitas Pegawai & Tag SiKinerja AI
+                    textY += fontSizeSmall + 9;
+                    ctx.font = `400 ${fontSizeSmall}px Inter, sans-serif`;
+                    ctx.fillStyle = '#cbd5e1';
+                    ctx.fillText(`👤 ${pegawai}  |  Terverifikasi SiKinerja AI`, textX, textY);
+
+                    // Konversi ke DataURL & Blob JPEG
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                    canvas.toBlob((blob) => {
+                        const cleanSlug = kegiatan.toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 25);
+                        const filename = `${tanggal.replace(/-/g, '')}_${jam.replace(':', '')}_${cleanSlug || 'foto'}.jpg`;
+
+                        appState.currentPhoto.watermarkedDataUrl = dataUrl;
+                        appState.currentPhoto.watermarkedBlob = blob;
+                        appState.currentPhoto.filename = filename;
+
+                        document.getElementById('watermarked-preview-img').src = dataUrl;
+                        document.getElementById('photo-size-label').textContent = `${Math.round(blob.size / 1024)} KB`;
+                        document.getElementById('photo-preview-container').classList.remove('hidden');
+                        document.getElementById('photo-upload-buttons').classList.add('hidden');
+                    }, 'image/jpeg', 0.85);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removePhoto() {
+            appState.currentPhoto = { rawFile: null, watermarkedDataUrl: null, watermarkedBlob: null, filename: '' };
+            document.getElementById('photo-camera-input').value = '';
+            document.getElementById('photo-gallery-input').value = '';
+            document.getElementById('photo-preview-container').classList.add('hidden');
+            document.getElementById('photo-upload-buttons').classList.remove('hidden');
+        }
+
+        // -------------------------------------------------------------------
+        // 7. LAMPIRAN DOKUMEN (PDF / DOCX / XLSX)
+        // -------------------------------------------------------------------
+        function handleDocSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const sizeKB = Math.round(file.size / 1024);
+            const sizeText = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB} KB`;
+
+            appState.currentDoc = {
+                rawFile: file,
+                filename: file.name,
+                sizeText: sizeText
+            };
+
+            document.getElementById('doc-filename-display').textContent = file.name;
+            document.getElementById('doc-filesize-display').textContent = `Ukuran: ${sizeText} • Siap diupload ke Drive`;
+            document.getElementById('doc-action-badge').textContent = 'Ganti';
+            document.getElementById('doc-dropzone').classList.add('border-brand-300', 'bg-brand-50/40');
+        }
+
+        function resetDocInput() {
+            appState.currentDoc = { rawFile: null, filename: '', sizeText: '' };
+            document.getElementById('doc-file-input').value = '';
+            document.getElementById('doc-filename-display').textContent = 'Lampirkan File Dokumen (Opsional)';
+            document.getElementById('doc-filesize-display').textContent = 'Notulensi, Surat Tugas, Laporan, Rekap Excel';
+            document.getElementById('doc-action-badge').textContent = 'Pilih';
+            document.getElementById('doc-dropzone').classList.remove('border-brand-300', 'bg-brand-50/40');
+        }
+
+        // -------------------------------------------------------------------
+        // 8. INTEGRASI NYATA GOOGLE IDENTITY SERVICES (GIS) & DRIVE API v3
+        // -------------------------------------------------------------------
+        function handleQuickDriveAction() {
+            if (appState.drive.isLive) {
+                showToast('Sudah terhubung dengan Google Drive Live!', 'success');
+            } else if (appState.drive.clientId) {
+                authorizeGoogleDrive();
+            } else {
+                switchTab('pengaturan');
+                showToast('Masukkan Google OAuth Client ID Anda untuk mode Live Drive.', 'info');
+            }
+        }
+
+        function saveClientIdAndConnect() {
+            const clientId = document.getElementById('set-client-id').value.trim();
+            if (!clientId) {
+                showToast('Harap isi Google OAuth Client ID terlebih dahulu.', 'error');
+                return;
+            }
+            appState.drive.clientId = clientId;
+            saveConfigToLocal();
+            authorizeGoogleDrive();
+        }
+
+        function authorizeGoogleDrive() {
+            if (!window.google || !google.accounts || !google.accounts.oauth2) {
+                showToast('Library Google Identity Services sedang dimuat, coba sesaat lagi.', 'error');
+                return;
+            }
+
+            try {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: appState.drive.clientId,
+                    scope: 'https://www.googleapis.com/auth/drive.file',
+                    callback: (tokenResponse) => {
+                        if (tokenResponse && tokenResponse.access_token) {
+                            appState.drive.accessToken = tokenResponse.access_token;
+                            appState.drive.tokenExpiry = Date.now() + (tokenResponse.expires_in * 1000);
+                            appState.drive.isLive = true;
+                            updateDriveConnectionUI(true);
+                            showToast('Berhasil terhubung ke Google Drive pribadi!', 'success');
+                        }
+                    },
+                });
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            } catch (err) {
+                console.error(err);
+                showToast('Gagal menginisialisasi OAuth Client ID. Periksa kembali ID Anda.', 'error');
+            }
+        }
+
+        function disconnectGoogleDrive() {
+            if (appState.drive.accessToken && window.google) {
+                google.accounts.oauth2.revoke(appState.drive.accessToken, () => {});
+            }
+            appState.drive.accessToken = null;
+            appState.drive.isLive = false;
+            updateDriveConnectionUI(false);
+            showToast('Beralih ke Mode Simulasi Lokal.', 'info');
+        }
+
+        function updateDriveConnectionUI(isLive) {
+            const dot = document.getElementById('drive-indicator-dot');
+            const icon = document.getElementById('drive-header-icon');
+            const badge = document.getElementById('drive-mode-badge');
+            const sub = document.getElementById('drive-account-sub');
+            const btn = document.getElementById('header-connect-btn');
+            const statusBox = document.getElementById('oauth-status-box');
+
+            if (isLive) {
+                dot.classList.replace('bg-amber-400', 'bg-emerald-400');
+                icon.classList.replace('text-amber-300', 'text-emerald-300');
+                badge.textContent = 'Google Drive API Live Terhubung';
+                sub.textContent = 'Auto-folder & upload langsung ke Google Drive Anda';
+                btn.textContent = 'Aktif';
+                btn.classList.add('bg-emerald-500', 'text-white');
+                btn.classList.remove('bg-white', 'text-brand-700');
+                statusBox.innerHTML = 'Status saat ini: <strong class="text-emerald-700">TERHUBUNG (Live Google Drive API v3)</strong>';
+            } else {
+                dot.classList.replace('bg-emerald-400', 'bg-amber-400');
+                icon.classList.replace('text-emerald-300', 'text-amber-300');
+                badge.textContent = 'Mode Simulasi / Demo Lokal';
+                sub.textContent = 'Tersimpan di memori HP & simulasi struktur Drive';
+                btn.textContent = 'Hubungkan';
+                btn.classList.remove('bg-emerald-500', 'text-white');
+                btn.classList.add('bg-white', 'text-brand-700');
+                statusBox.innerHTML = 'Status saat ini: <strong>Mode Simulasi Lokal</strong> (Belum terhubung token OAuth aktif).';
+            }
+        }
+
+        /**
+         * Mencari folder di Google Drive berdasarkan nama & parentId; jika belum ada, otomatis membuat folder baru.
+         */
+        async function findOrCreateDriveFolder(folderName, parentId = 'root') {
+            const token = appState.drive.accessToken;
+            const query = `name='${folderName.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
+            
+            const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,webViewLink)`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const searchData = await searchRes.json();
+
+            if (searchData.files && searchData.files.length > 0) {
+                return searchData.files[0];
+            }
+
+            // Buat folder baru jika belum ditemukan
+            const createRes = await fetch('https://www.googleapis.com/drive/v3/files?fields=id,name,webViewLink', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: folderName,
+                    mimeType: 'application/vnd.google-apps.folder',
+                    parents: [parentId]
+                })
+            });
+
+            if (!createRes.ok) {
+                throw new Error(`Gagal membuat folder ${folderName}`);
+            }
+            return await createRes.json();
+        }
+
+        /**
+         * Mengupload file Blob/File ke folder spesifik di Google Drive menggunakan Multipart Upload REST API v3
+         */
+        async function uploadFileToDriveFolder(fileBlob, fileName, folderId) {
+            const token = appState.drive.accessToken;
+            const metadata = {
+                name: fileName,
+                parents: [folderId]
+            };
+
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            form.append('file', fileBlob);
+
+            const uploadRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: form
+            });
+
+            if (!uploadRes.ok) {
+                throw new Error(`Gagal mengupload file ${fileName}`);
+            }
+            return await uploadRes.json();
+        }
+
+        // -------------------------------------------------------------------
+        // 9. PROSES SIMPAN KINERJA (LIVE DRIVE ATAU SIMULASI LOKAL)
+        // -------------------------------------------------------------------
+        async function handleSaveKinerja(event) {
+            event.preventDefault();
+
+            const tanggal = document.getElementById('input-tanggal').value;
+            const jam = document.getElementById('input-jam').value;
+            const kegiatan = document.getElementById('input-kegiatan').value.trim();
+            const kategori = document.querySelector('input[name="kategori"]:checked')?.value || 'Rapat/Koordinasi';
+
+            if (!tanggal || !jam || !kegiatan) {
+                showToast('Lengkapi Tanggal, Jam, dan Uraian Kegiatan.', 'error');
+                return;
+            }
+
+            const folderInfo = buildFolderPathInfo(tanggal);
+            const overlay = document.getElementById('upload-overlay');
+            const stepText = document.getElementById('upload-overlay-step');
+            const progressBar = document.getElementById('upload-progress-bar');
+
+            overlay.classList.remove('hidden');
+            progressBar.style.width = '25%';
+
+            let driveFolderUrl = null;
+            let syncMode = 'Simulasi';
+
+            try {
+                // Cek apakah token Live Drive masih valid
+                const isTokenValid = appState.drive.isLive && appState.drive.accessToken && Date.now() < appState.drive.tokenExpiry;
+
+                if (isTokenValid) {
+                    syncMode = 'Live Google Drive';
+                    stepText.textContent = `Membuat hierarki folder ${folderInfo.fullPath}...`;
+                    
+                    // Buat berjenjang: Kinerja_Harian -> Tahun -> Bulan -> Tanggal
+                    const rootFolder = await findOrCreateDriveFolder(folderInfo.root, 'root');
+                    progressBar.style.width = '45%';
+                    const yearFolder = await findOrCreateDriveFolder(folderInfo.year, rootFolder.id);
+                    const monthFolder = await findOrCreateDriveFolder(folderInfo.month, yearFolder.id);
+                    const dateFolder = await findOrCreateDriveFolder(folderInfo.date, monthFolder.id);
+                    driveFolderUrl = dateFolder.webViewLink;
+                    progressBar.style.width = '65%';
+
+                    // Upload Foto Ber-Watermark jika ada
+                    if (appState.currentPhoto.watermarkedBlob) {
+                        stepText.textContent = `Mengupload foto bukti: ${appState.currentPhoto.filename}...`;
+                        await uploadFileToDriveFolder(
+                            appState.currentPhoto.watermarkedBlob,
+                            appState.currentPhoto.filename,
+                            dateFolder.id
+                        );
+                    }
+                    progressBar.style.width = '85%';
+
+                    // Upload Dokumen Pendukung jika ada
+                    if (appState.currentDoc.rawFile) {
+                        stepText.textContent = `Mengupload dokumen: ${appState.currentDoc.filename}...`;
+                        await uploadFileToDriveFolder(
+                            appState.currentDoc.rawFile,
+                            appState.currentDoc.filename,
+                            dateFolder.id
+                        );
+                    }
+                    progressBar.style.width = '100%';
+                } else {
+                    // Simulasi proses pembuatan folder & pengarsipan
+                    stepText.textContent = `Menyiapkan struktur ${folderInfo.fullPath}...`;
+                    await new Promise(r => setTimeout(r, 450));
+                    progressBar.style.width = '70%';
+                    stepText.textContent = 'Menyimpan metadata & bukti dukung ke penyimpanan lokal...';
+                    await new Promise(r => setTimeout(r, 400));
+                    progressBar.style.width = '100%';
+                }
+
+                // Buat objek log kinerja baru
+                const newEntry = {
+                    id: 'log-' + Date.now(),
+                    tanggal,
+                    jam,
+                    kategori,
+                    kegiatan,
+                    folderPath: folderInfo.fullPath,
+                    photoDataUrl: appState.currentPhoto.watermarkedDataUrl || null,
+                    photoName: appState.currentPhoto.filename || null,
+                    docName: appState.currentDoc.filename || null,
+                    syncMode,
+                    driveFolderUrl,
+                    createdAt: new Date().toISOString()
+                };
+
+                appState.logs.unshift(newEntry);
+                saveLogsToLocal();
+
+                // Reset Form
+                document.getElementById('input-kegiatan').value = '';
+                document.getElementById('ai-prompt-input').value = '';
+                document.getElementById('ai-status-feedback').classList.add('hidden');
+                removePhoto();
+                resetDocInput();
+                resetCurrentTime();
+
+                overlay.classList.add('hidden');
+                showToast(
+                    syncMode === 'Live Google Drive'
+                        ? 'Tersimpan & terupload ke Google Drive!'
+                        : 'Kinerja dicatat di riwayat lokal!',
+                    'success'
+                );
+
+                // Arahkan otomatis ke tab Riwayat agar pengguna langsung melihat hasil dokumentasi
+                switchTab('riwayat');
+
+            } catch (err) {
+                console.error(err);
+                overlay.classList.add('hidden');
+                showToast(`Terjadi kesalahan upload: ${err.message}`, 'error');
+            }
+        }
+
+        // -------------------------------------------------------------------
+        // 10. RIWAYAT, FILTER, EXPORT CSV & PRINT PDF
+        // -------------------------------------------------------------------
+        function clearDateFilter() {
+            document.getElementById('filter-tanggal').value = '';
+            renderHistoryList();
+        }
+
+        function renderHistoryList() {
+            const container = document.getElementById('history-list-container');
+            const filterDate = document.getElementById('filter-tanggal').value;
+
+            // Update statistik ringkas
+            document.getElementById('stat-total').textContent = appState.logs.length;
+            document.getElementById('stat-foto').textContent = appState.logs.filter(l => l.photoDataUrl || l.photoName).length;
+            document.getElementById('stat-drive').textContent = appState.logs.filter(l => l.syncMode === 'Live Google Drive').length;
+            updateNavBadge();
+
+            // Update subtitle untuk mode Print PDF
+            document.getElementById('print-subtitle').textContent = 
+                `Pegawai: ${appState.profile.nama} (${appState.profile.jabatan}) • Filter: ${filterDate || 'Semua Tanggal'}`;
+
+            const filteredLogs = filterDate 
+                ? appState.logs.filter(item => item.tanggal === filterDate)
+                : appState.logs;
+
+            if (filteredLogs.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-3xl p-8 text-center shadow-android border border-slate-100">
+                        <div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="folder-search" class="w-7 h-7"></i>
+                        </div>
+                        <h4 class="font-display font-bold text-sm text-slate-700">Belum Ada Catatan Kinerja</h4>
+                        <p class="text-xs text-slate-500 mt-1">Mulai catat kegiatan harian Anda melalui tab Catat.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = filteredLogs.map(item => {
+                const isLive = item.syncMode === 'Live Google Drive';
+                const badgeClass = isLive 
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                    : 'bg-amber-50 text-amber-700 border-amber-200';
+                
+                const driveLinkHtml = item.driveFolderUrl 
+                    ? `<a href="${item.driveFolderUrl}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:underline mt-1">
+                         <i data-lucide="external-link" class="w-3 h-3"></i> Buka Folder di Google Drive
+                       </a>`
+                    : `<span class="text-[10px] font-mono text-slate-400 block truncate mt-1">📁 ${item.folderPath}</span>`;
+
+                return `
+                    <article class="bg-white rounded-3xl p-4 shadow-android border border-slate-100 space-y-2.5">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="px-2.5 py-1 rounded-xl bg-brand-50 text-brand-700 text-[11px] font-bold">
+                                    ${item.tanggal} • ${item.jam}
+                                </span>
+                                <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-semibold">
+                                    ${item.kategori}
+                                </span>
+                            </div>
+                            <button type="button" onclick="deleteHistoryItem('${item.id}')" class="text-slate-400 hover:text-rose-500 p-1 no-print" title="Hapus Log">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <p class="text-sm font-medium text-slate-800 leading-snug">${escapeHtml(item.kegiatan)}</p>
+
+                        ${item.photoDataUrl ? `
+                            <div class="rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
+                                <img src="${item.photoDataUrl}" alt="Bukti Kegiatan" class="w-full max-h-48 object-cover">
+                            </div>
+                        ` : ''}
+
+                        <div class="flex flex-wrap items-center gap-2 pt-1">
+                            ${item.photoName ? `
+                                <span class="inline-flex items-center gap-1 text-[11px] bg-slate-100 text-slate-700 px-2.5 py-1 rounded-xl">
+                                    <i data-lucide="image" class="w-3.5 h-3.5 text-brand-600"></i>
+                                    <span class="truncate max-w-[140px]">${escapeHtml(item.photoName)}</span>
+                                </span>
+                            ` : ''}
+                            ${item.docName ? `
+                                <span class="inline-flex items-center gap-1 text-[11px] bg-slate-100 text-slate-700 px-2.5 py-1 rounded-xl">
+                                    <i data-lucide="file-text" class="w-3.5 h-3.5 text-rose-600"></i>
+                                    <span class="truncate max-w-[140px]">${escapeHtml(item.docName)}</span>
+                                </span>
+                            ` : ''}
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                            <div class="overflow-hidden flex-1">
+                                ${driveLinkHtml}
+                            </div>
+                            <span class="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${badgeClass}">
+                                ${item.syncMode}
+                            </span>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function deleteHistoryItem(id) {
+            appState.logs = appState.logs.filter(item => item.id !== id);
+            saveLogsToLocal();
+            renderHistoryList();
+            showToast('Catatan kinerja dihapus.', 'info');
+        }
+
+        function clearAllLocalData() {
+            localStorage.removeItem(STORAGE_KEY_LOGS);
+            appState.logs = [];
+            renderHistoryList();
+            showToast('Seluruh riwayat lokal telah dibersihkan.', 'info');
+        }
+
+        function exportToCSV() {
+            const filterDate = document.getElementById('filter-tanggal').value;
+            const dataToExport = filterDate 
+                ? appState.logs.filter(item => item.tanggal === filterDate)
+                : appState.logs;
+
+            if (dataToExport.length === 0) {
+                showToast('Tidak ada data kinerja untuk diexport.', 'error');
+                return;
+            }
+
+            const headers = ['No', 'Tanggal', 'Jam', 'Kategori', 'Uraian Kegiatan', 'File Foto', 'File Dokumen', 'Folder Tujuan Google Drive', 'Status Sync'];
+            const rows = dataToExport.map((item, idx) => [
+                idx + 1,
+                item.tanggal,
+                item.jam,
+                `"${(item.kategori || '').replace(/"/g, '""')}"`,
+                `"${(item.kegiatan || '').replace(/"/g, '""')}"`,
+                `"${item.photoName || '-'}"`,
+                `"${item.docName || '-'}"`,
+                `"${item.folderPath}"`,
+                item.syncMode
+            ]);
+
+            const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Rekap_Kinerja_${filterDate || getTodayDateString()}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast('Laporan CSV berhasil diunduh!', 'success');
+        }
+
+        // -------------------------------------------------------------------
+        // 11. HELPER UTILITAS (TOAST & SANITASI HTML)
+        // -------------------------------------------------------------------
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const styles = {
+                success: 'bg-slate-900 text-white border-emerald-500/50',
+                error: 'bg-rose-600 text-white border-rose-400',
+                info: 'bg-slate-800 text-white border-slate-700'
+            };
+
+            const icons = {
+                success: 'check-circle-2',
+                error: 'alert-circle',
+                info: 'info'
+            };
+
+            toast.className = `${styles[type] || styles.info} border px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs font-medium transition-all duration-300 transform translate-y-2 opacity-0`;
+            toast.innerHTML = `
+                <i data-lucide="${icons[type] || 'info'}" class="w-4 h-4 shrink-0 text-emerald-400"></i>
+                <span class="leading-snug">${escapeHtml(message)}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>
