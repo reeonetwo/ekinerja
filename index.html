@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SiKinerja AI - Asisten Dokumentasi Kinerja</title>
+    <title>e-Kinerja AI - Asisten Dokumentasi Kinerja</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -140,7 +140,7 @@
                             <h1 class="font-display font-bold text-lg tracking-tight leading-none">SiKinerja AI</h1>
                             <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-white/20 text-white">v2.5</span>
                         </div>
-                        <p id="header-user-info" class="text-xs text-indigo-100 mt-0.5">RIWANTO, SKM • Staf Renvalkeu Dinkes Kota Tegal</p>
+                        <p id="header-user-info" class="text-xs text-indigo-100 mt-0.5">Riwanto, SKM • Staf Renvalkeu Dinkes Kota Tegal</p>
                     </div>
                 </div>
 
@@ -231,7 +231,7 @@
                     </div>
 
                     <!-- Tanggal & Jam -->
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-3">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal Kegiatan</label>
                             <div class="relative">
@@ -239,12 +239,31 @@
                                     class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white">
                             </div>
                         </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Jam Kegiatan</label>
-                            <div class="relative">
-                                <input type="time" id="input-jam" required onchange="refreshWatermarkIfPhotoExists()"
-                                    class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white">
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Jam Mulai</label>
+                                <div class="relative">
+                                    <input type="time" id="input-jam-mulai" required onchange="handleTimeRangeChange()"
+                                        class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white">
+                                </div>
                             </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Jam Selesai</label>
+                                <div class="relative">
+                                    <input type="time" id="input-jam-selesai" required onchange="handleTimeRangeChange()"
+                                        class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Indikator Durasi Otomatis -->
+                        <div class="flex items-center justify-between bg-brand-50/70 border border-brand-100 rounded-2xl px-3.5 py-2">
+                            <span class="text-[11px] font-medium text-slate-600 flex items-center gap-1.5">
+                                <i data-lucide="clock" class="w-3.5 h-3.5 text-brand-600"></i>
+                                Estimasi Durasi Kinerja:
+                            </span>
+                            <span id="duration-display-badge" class="text-xs font-bold text-brand-700">1 jam 0 menit</span>
                         </div>
                     </div>
 
@@ -253,6 +272,13 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1.5">Kategori Kinerja</label>
                         <div class="grid grid-cols-2 gap-2" id="category-selector">
                             <label class="cursor-pointer">
+                                <input type="radio" name="kategori" value="Apel" class="peer sr-only">
+                                <div class="p-2.5 rounded-2xl border border-slate-200 bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 text-slate-600 text-xs font-medium flex items-center gap-2 transition">
+                                    <i data-lucide="file-text" class="w-4 h-4 shrink-0"></i>
+                                    <span class="truncate">Apel Pagi</span>
+                                </div>
+                            </label>
+							<label class="cursor-pointer">
                                 <input type="radio" name="kategori" value="Rapat/Koordinasi" class="peer sr-only" checked>
                                 <div class="p-2.5 rounded-2xl border border-slate-200 bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 text-slate-600 text-xs font-medium flex items-center gap-2 transition">
                                     <i data-lucide="users" class="w-4 h-4 shrink-0"></i>
@@ -260,24 +286,32 @@
                                 </div>
                             </label>
                             <label class="cursor-pointer">
-                                <input type="radio" name="kategori" value="Pelayanan/Lapangan" class="peer sr-only">
-                                <div class="p-2.5 rounded-2xl border border-slate-200 bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 text-slate-600 text-xs font-medium flex items-center gap-2 transition">
-                                    <i data-lucide="map-pin" class="w-4 h-4 shrink-0"></i>
-                                    <span class="truncate">Monitoring Simpus</span>
-                                </div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="kategori" value="Penyusunan Dokumen" class="peer sr-only">
+                                <input type="radio" name="kategori" value="Administrasi/Laporan" class="peer sr-only">
                                 <div class="p-2.5 rounded-2xl border border-slate-200 bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 text-slate-600 text-xs font-medium flex items-center gap-2 transition">
                                     <i data-lucide="file-text" class="w-4 h-4 shrink-0"></i>
-                                    <span class="truncate">Penyusunan Dokumen</span>
+                                    <span class="truncate">Menyusun Laporan</span>
                                 </div>
                             </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="kategori" value="Monitoring/Evaluasi" class="peer sr-only">
+							<label class="cursor-pointer">
+                                <input type="radio" name="kategori" value="Monev" class="peer sr-only">
                                 <div class="p-2.5 rounded-2xl border border-slate-200 bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 text-slate-600 text-xs font-medium flex items-center gap-2 transition">
-                                    <i data-lucide="bar-chart-3" class="w-4 h-4 shrink-0"></i>
-                                    <span class="truncate">Monitoring/Evaluasi</span>
+                                    <i data-lucide="map-pin" class="w-4 h-4 shrink-0"></i>
+                                    <span class="truncate">Melakukan  Monev</span>
+                                </div>
+                            </label>
+                            
+                            <label class="cursor-pointer">
+                                <input type="radio" name="kategori" value="Pengembangan Sistem/IT" class="peer sr-only">
+                                <div class="p-2.5 rounded-2xl border border-slate-200 bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 text-slate-600 text-xs font-medium flex items-center gap-2 transition">
+                                    <i data-lucide="laptop" class="w-4 h-4 shrink-0"></i>
+                                    <span class="truncate">Pengembangan Sistem/IT</span>
+                                </div>
+                            </label>
+                            <label class="cursor-pointer col-span-2">
+                                <input type="radio" name="kategori" value="Lainnya" class="peer sr-only">
+                                <div class="p-2 rounded-2xl border border-slate-200 bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 text-slate-600 text-xs font-medium flex items-center justify-center gap-2 transition">
+                                    <i data-lucide="layers" class="w-4 h-4 shrink-0"></i>
+                                    <span>Kegiatan Lainnya</span>
                                 </div>
                             </label>
                         </div>
@@ -419,8 +453,8 @@
                         <span class="text-[11px] font-medium text-slate-500">Total Kegiatan</span>
                     </div>
                     <div class="bg-white p-3 rounded-2xl shadow-android border border-slate-100 text-center">
-                        <span id="stat-foto" class="font-display font-extrabold text-xl text-emerald-600 block">0</span>
-                        <span class="text-[11px] font-medium text-slate-500">Bukti Foto</span>
+                        <span id="stat-durasi" class="font-display font-extrabold text-base text-emerald-600 block leading-7">0j 0m</span>
+                        <span class="text-[11px] font-medium text-slate-500">Total Durasi</span>
                     </div>
                     <div class="bg-white p-3 rounded-2xl shadow-android border border-slate-100 text-center">
                         <span id="stat-drive" class="font-display font-extrabold text-xl text-blue-600 block">0</span>
@@ -482,7 +516,7 @@
                     <div class="space-y-2.5">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap & Gelar</label>
-                            <input type="text" id="set-nama" value="RIWANTO, SKM" 
+                            <input type="text" id="set-nama" value="Riwanto, SKM" 
                                 class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800">
                         </div>
                         <div>
@@ -523,8 +557,8 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Google OAuth 2.0 Client ID</label>
                         <input type="text" id="set-client-id" 
-                            placeholder="556526035426-t2vnmgcdnhccmcmddggr6mgdhh1j4s0m.apps.googleusercontent.com"
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" value="556526035426-t2vnmgcdnhccmcmddggr6mgdhh1j4s0m.apps.googleusercontent.com">
+                            placeholder="556526035426-t2vnmgcdnhccmcmddggr6mgdhh1j4s0m.apps.googleusercontent.com" value="556526035426-t2vnmgcdnhccmcmddggr6mgdhh1j4s0m.apps.googleusercontent.com"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 pt-1">
@@ -571,6 +605,19 @@
             <p id="upload-overlay-step" class="text-xs text-indigo-200 mt-1 max-w-xs">Membuat struktur folder /Kinerja_Harian/2026/...</p>
             <div class="w-48 h-1.5 bg-white/20 rounded-full overflow-hidden mt-4">
                 <div id="upload-progress-bar" class="h-full bg-emerald-400 w-1/3 transition-all duration-300"></div>
+            </div>
+        </div>
+
+        <!-- MODAL PRATINJAU FOTO BUKTI -->
+        <div id="photo-modal" onclick="closePhotoModal()" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
+            <div onclick="event.stopPropagation()" class="relative max-w-md w-full bg-slate-900 rounded-3xl overflow-hidden border border-white/15 shadow-2xl">
+                <button type="button" onclick="closePhotoModal()" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/60 text-white hover:bg-black flex items-center justify-center z-10">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+                <img id="modal-photo-img" src="" alt="Pratinjau Penuh" class="w-full max-h-[75vh] object-contain bg-black">
+                <div class="p-3 bg-slate-900 text-white">
+                    <p id="modal-photo-caption" class="text-xs font-medium text-slate-200"></p>
+                </div>
             </div>
         </div>
 
@@ -621,8 +668,8 @@
 
         let appState = {
             profile: {
-                nama: 'RIWANTO, SKM',
-                jabatan: 'Staf Renvalkeu Dinkes'
+                nama: 'Riwanto, SKM',
+                jabatan: 'Staf Renvalkeu Dinkes Kota Tegal'
             },
             drive: {
                 clientId: '',
@@ -680,7 +727,7 @@
 
                 document.getElementById('set-nama').value = appState.profile.nama;
                 document.getElementById('set-jabatan').value = appState.profile.jabatan;
-                document.getElementById('set-client-id').value = appState.drive.clientId;
+                document.getElementById('set-client-id').value = '556526035426-t2vnmgcdnhccmcmddggr6mgdhh1j4s0m.apps.googleusercontent.com';//appState.drive.clientId;
                 updateHeaderProfileUI();
 
                 const savedLogs = JSON.parse(localStorage.getItem(STORAGE_KEY_LOGS));
@@ -692,12 +739,15 @@
                     appState.logs = [{
                         id: 'demo-init-1',
                         tanggal: todayStr,
-                        jam: '08:30',
+                        jamMulai: '08:00',
+                        jamSelesai: '09:30',
+                        durasiMenit: 90,
+                        durasiText: '1 jam 30 menit',
                         kategori: 'Rapat/Koordinasi',
                         kegiatan: 'Apel pagi dan koordinasi pembagian tugas evaluasi triwulan IV',
                         folderPath: buildFolderPathInfo(todayStr).fullPath,
                         photoDataUrl: null,
-                        photoName: '20261112_0830_apel_pagi.jpg',
+                        photoName: '20261112_0800-0930_apel_pagi.jpg',
                         docName: 'Notulensi_Rapat_Triwulan.pdf',
                         syncMode: 'Simulasi',
                         driveFolderUrl: null,
@@ -788,10 +838,10 @@
         // -------------------------------------------------------------------
         function fillExamplePrompt() {
             const examples = [
-                "Rapat koordinasi evaluasi program jam 9 pagi tadi",
-                "Pelayanan verifikasi berkas masyarakat di loket terpadu pukul 10.30",
-                "Penyusunan dokumen laporan realisasi anggaran bulan ini jam 14:15",
-                "Monitoring dan evaluasi lapangan proyek infrastruktur kemarin jam 11 siang"
+                "Rapat koordinasi evaluasi program pukul 08.00 sampai 10.30",
+                "Pelayanan verifikasi berkas masyarakat di loket terpadu jam 09:00 - 11:30",
+                "Administrasi penyusunan dokumen laporan realisasi anggaran jam 13.30 s.d. 15.00",
+                "Pengembangan sistem dan pemeliharaan database aplikasi kemarin jam 10 pagi"
             ];
             const randomPrompt = examples[Math.floor(Math.random() * examples.length)];
             document.getElementById('ai-prompt-input').value = randomPrompt;
@@ -861,7 +911,7 @@
         }
 
         /**
-         * Mengekstrak Tanggal, Jam, Kategori, dan Nama Kegiatan dari kalimat bebas bahasa Indonesia
+         * Mengekstrak Tanggal, Jam Mulai, Jam Selesai, Kategori, dan Nama Kegiatan dari kalimat bebas bahasa Indonesia
          */
         function parseWithAI() {
             const rawText = document.getElementById('ai-prompt-input').value.trim();
@@ -874,8 +924,14 @@
             const now = new Date();
             let targetDate = new Date(now);
 
-            // 1. Ekstraksi Tanggal Relatif
-            if (lower.includes('kemarin lusa')) {
+            // 1. Ekstraksi Tanggal Relatif atau Spesifik (DD/MM/YYYY atau DD-MM-YYYY)
+            const explicitDateMatch = lower.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+            if (explicitDateMatch) {
+                const d = parseInt(explicitDateMatch[1], 10);
+                const m = parseInt(explicitDateMatch[2], 10) - 1;
+                const y = parseInt(explicitDateMatch[3], 10);
+                targetDate = new Date(y, m, d);
+            } else if (lower.includes('kemarin lusa')) {
                 targetDate.setDate(now.getDate() - 2);
             } else if (lower.includes('kemarin')) {
                 targetDate.setDate(now.getDate() - 1);
@@ -888,30 +944,46 @@
             const dd = String(targetDate.getDate()).padStart(2, '0');
             const formattedDate = `${yyyy}-${mm}-${dd}`;
 
-            // 2. Ekstraksi Jam (misal: "jam 9 pagi", "pukul 14.30", "jam 2 siang", "09:15")
-            let formattedTime = null;
-            const timeRegex = /(?:jam|pukul)?\s*(\d{1,2})(?:[:.](\d{2}))?\s*(pagi|siang|sore|malam)?/gi;
-            let match;
-            while ((match = timeRegex.exec(lower)) !== null) {
-                // Pastikan angka diikuti kata waktu atau diawali jam/pukul atau memakai titik/titik dua
-                const fullMatch = match[0].trim();
-                const hasPrefix = fullMatch.startsWith('jam') || fullMatch.startsWith('pukul');
-                const hasMinute = Boolean(match[2]);
-                const hasPeriod = Boolean(match[3]);
+            // 2. Ekstraksi Rentang Jam (Jam Mulai & Jam Selesai)
+            let startTimeStr = null;
+            let endTimeStr = null;
 
-                if (hasPrefix || hasMinute || hasPeriod) {
-                    let hour = parseInt(match[1], 10);
-                    let minute = match[2] ? parseInt(match[2], 10) : 0;
-                    const period = match[3];
+            const normalizeHour = (hStr, mStr, period) => {
+                let hour = parseInt(hStr, 10);
+                let minute = mStr ? parseInt(mStr, 10) : 0;
+                if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+                if (period === 'siang' && hour >= 1 && hour <= 5) hour += 12;
+                if (period === 'sore' && hour >= 1 && hour <= 7) hour += 12;
+                if (period === 'malam' && hour >= 1 && hour <= 11) hour += 12;
+                if (period === 'pagi' && hour === 12) hour = 0;
+                return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+            };
 
-                    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
-                        if (period === 'siang' && hour >= 1 && hour <= 5) hour += 12;
-                        if (period === 'sore' && hour >= 1 && hour <= 7) hour += 12;
-                        if (period === 'malam' && hour >= 1 && hour <= 11) hour += 12;
-                        if (period === 'pagi' && hour === 12) hour = 0;
+            // Pola A: Rentang dua waktu ("pukul 08.00 sampai 10.30", "jam 09:00 - 11:00", "08.30 s.d. 10.00")
+            const rangeRegex = /(?:jam|pukul)?\s*(\d{1,2})(?:[:.](\d{2}))?\s*(pagi|siang|sore|malam)?\s*(?:-|–|—|sampai(?:\s+dengan)?|hingga|s\.?d\.?)\s*(?:jam|pukul)?\s*(\d{1,2})(?:[:.](\d{2}))?\s*(pagi|siang|sore|malam)?/i;
+            const rangeMatch = lower.match(rangeRegex);
 
-                        formattedTime = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-                        break;
+            if (rangeMatch) {
+                const startPeriod = rangeMatch[3] || rangeMatch[6];
+                const endPeriod = rangeMatch[6] || rangeMatch[3];
+                startTimeStr = normalizeHour(rangeMatch[1], rangeMatch[2], startPeriod);
+                endTimeStr = normalizeHour(rangeMatch[4], rangeMatch[5], endPeriod);
+            } else {
+                // Pola B: Satu waktu saja -> otomatis set Jam Selesai +1 jam
+                const singleRegex = /(?:jam|pukul)?\s*(\d{1,2})(?:[:.](\d{2}))?\s*(pagi|siang|sore|malam)?/gi;
+                let match;
+                while ((match = singleRegex.exec(lower)) !== null) {
+                    const fullMatch = match[0].trim();
+                    const hasPrefix = fullMatch.startsWith('jam') || fullMatch.startsWith('pukul');
+                    const hasMinute = Boolean(match[2]);
+                    const hasPeriod = Boolean(match[3]);
+
+                    if (hasPrefix || hasMinute || hasPeriod) {
+                        startTimeStr = normalizeHour(match[1], match[2], match[3]);
+                        if (startTimeStr) {
+                            endTimeStr = addMinutesToTime(startTimeStr, 60);
+                            break;
+                        }
                     }
                 }
             }
@@ -920,17 +992,25 @@
             let detectedCategory = 'Rapat/Koordinasi';
             if (/(pelayanan|lapangan|kunjungan|survei|masyarakat|loket|warga|inspeksi)/.test(lower)) {
                 detectedCategory = 'Pelayanan/Lapangan';
-            } else if (/(dokumen|laporan|surat|notulensi|menyusun|penyusunan|draft|proposal|rekap|input)/.test(lower)) {
-                detectedCategory = 'Penyusunan Dokumen';
-            } else if (/(monitoring|evaluasi|monev|pengawasan|audit|penilaian|verifikasi)/.test(lower)) {
-                detectedCategory = 'Monitoring/Evaluasi';
+            } else if (/(administrasi|dokumen|laporan|surat|notulensi|menyusun|penyusunan|draft|proposal|rekap|input)/.test(lower)) {
+                detectedCategory = 'Administrasi/Laporan';
+            } else if (/(sistem|aplikasi|server|website|coding|database|jaringan|it|software|program)/.test(lower) && !/evaluasi program/.test(lower)) {
+                detectedCategory = 'Pengembangan Sistem/IT';
+            } else if (/(evaluasi|monev|monitoring|evaluasi)/.test(lower)) {
+                detectedCategory = 'Monev';
+			} else if (/(apel|upacara|gladi)/.test(lower)) {
+                detectedCategory = 'Apel';
             } else if (/(rapat|koordinasi|briefing|zoom|meeting|diskusi|audiensi)/.test(lower)) {
                 detectedCategory = 'Rapat/Koordinasi';
+			} else {
+                detectedCategory = 'Lainnya';
             }
 
-            // 4. Bersihkan Nama Kegiatan dari keterangan waktu agar rapi
+            // 4. Bersihkan Nama Kegiatan dari keterangan tanggal & rentang waktu agar rapi
             let cleanActivity = rawText
+                .replace(/(?:pada\s+)?(?:tanggal\s+)?\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/gi, '')
                 .replace(/(?:pada\s+)?(?:hari\s+)?(?:kemarin\s+lusa|kemarin|hari\s+ini|tadi)/gi, '')
+                .replace(/(?:pada\s+)?(?:jam|pukul)?\s*\d{1,2}(?:[:.]\d{2})?\s*(?:pagi|siang|sore|malam|wib|wita|wit)?\s*(?:-|–|—|sampai(?:\s+dengan)?|hingga|s\.?d\.?)\s*(?:jam|pukul)?\s*\d{1,2}(?:[:.]\d{2})?\s*(?:pagi|siang|sore|malam|wib|wita|wit)?/gi, '')
                 .replace(/(?:pada\s+)?(?:jam|pukul)\s*\d{1,2}(?:[:.]\d{2})?\s*(?:pagi|siang|sore|malam|wib|wita|wit)?/gi, '')
                 .replace(/\s+/g, ' ')
                 .trim();
@@ -943,8 +1023,11 @@
 
             // Terapkan ke Form
             document.getElementById('input-tanggal').value = formattedDate;
-            if (formattedTime) {
-                document.getElementById('input-jam').value = formattedTime;
+            if (startTimeStr) {
+                document.getElementById('input-jam-mulai').value = startTimeStr;
+            }
+            if (endTimeStr) {
+                document.getElementById('input-jam-selesai').value = endTimeStr;
             }
             document.getElementById('input-kegiatan').value = cleanActivity;
 
@@ -952,18 +1035,19 @@
             if (radioEl) radioEl.checked = true;
 
             updateFolderPreview();
-            refreshWatermarkIfPhotoExists();
+            handleTimeRangeChange();
 
             // Tampilkan feedback visual
             const feedbackEl = document.getElementById('ai-status-feedback');
             const feedbackText = document.getElementById('ai-status-text');
-            feedbackText.textContent = `Terisi: ${formattedDate}${formattedTime ? ' • ' + formattedTime : ''} (${detectedCategory})`;
+            const timeLabel = startTimeStr && endTimeStr ? ` • ${startTimeStr} - ${endTimeStr}` : '';
+            feedbackText.textContent = `Terisi: ${formattedDate}${timeLabel} (${detectedCategory})`;
             feedbackEl.classList.remove('hidden');
-            showToast('AI berhasil mengisi formulir kinerja!', 'success');
+            showToast('AI berhasil mengekstrak jadwal & rentang waktu!', 'success');
         }
 
         // -------------------------------------------------------------------
-        // 5. PENGELOLAAN TANGGAL & STRUKTUR FOLDER GOOGLE DRIVE
+        // 5. PENGELOLAAN TANGGAL, DURASI WAKTU & STRUKTUR FOLDER DRIVE
         // -------------------------------------------------------------------
         function getTodayDateString() {
             const now = new Date();
@@ -973,14 +1057,62 @@
             return `${yyyy}-${mm}-${dd}`;
         }
 
+        function addMinutesToTime(timeStr, minsToAdd) {
+            const [h, m] = timeStr.split(':').map(Number);
+            const total = (h * 60 + m + minsToAdd + 1440) % 1440;
+            const nh = String(Math.floor(total / 60)).padStart(2, '0');
+            const nm = String(total % 60).padStart(2, '0');
+            return `${nh}:${nm}`;
+        }
+
+        function calculateDurationInfo(startStr, endStr) {
+            if (!startStr || !endStr) return { minutes: 0, text: '0 menit', isValid: false };
+            const [sh, sm] = startStr.split(':').map(Number);
+            const [eh, em] = endStr.split(':').map(Number);
+            const startTotal = sh * 60 + sm;
+            const endTotal = eh * 60 + em;
+            const diff = endTotal - startTotal;
+
+            if (diff <= 0) {
+                return { minutes: diff, text: 'Jam selesai harus > jam mulai', isValid: false };
+            }
+            const hours = Math.floor(diff / 60);
+            const mins = diff % 60;
+            const parts = [];
+            if (hours > 0) parts.push(`${hours} jam`);
+            if (mins > 0) parts.push(`${mins} menit`);
+            return { minutes: diff, text: parts.join(' '), isValid: true };
+        }
+
+        function handleTimeRangeChange() {
+            const startVal = document.getElementById('input-jam-mulai').value;
+            const endVal = document.getElementById('input-jam-selesai').value;
+            const info = calculateDurationInfo(startVal, endVal);
+            const badge = document.getElementById('duration-display-badge');
+
+            badge.textContent = info.text;
+            if (info.isValid) {
+                badge.classList.remove('text-rose-600');
+                badge.classList.add('text-brand-700');
+            } else {
+                badge.classList.remove('text-brand-700');
+                badge.classList.add('text-rose-600');
+            }
+            refreshWatermarkIfPhotoExists();
+        }
+
         function resetCurrentTime() {
             const now = new Date();
             document.getElementById('input-tanggal').value = getTodayDateString();
             const hh = String(now.getHours()).padStart(2, '0');
             const min = String(now.getMinutes()).padStart(2, '0');
-            document.getElementById('input-jam').value = `${hh}:${min}`;
+            const startStr = `${hh}:${min}`;
+            const endStr = addMinutesToTime(startStr, 60);
+
+            document.getElementById('input-jam-mulai').value = startStr;
+            document.getElementById('input-jam-selesai').value = endStr;
             updateFolderPreview();
-            refreshWatermarkIfPhotoExists();
+            handleTimeRangeChange();
         }
 
         function buildFolderPathInfo(dateStr) {
@@ -1052,7 +1184,8 @@
 
                     // Siapkan teks watermark
                     const tanggal = document.getElementById('input-tanggal').value || getTodayDateString();
-                    const jam = document.getElementById('input-jam').value || '09:00';
+                    const jamMulai = document.getElementById('input-jam-mulai').value || '08:00';
+                    const jamSelesai = document.getElementById('input-jam-selesai').value || '09:00';
                     const kegiatan = document.getElementById('input-kegiatan').value.trim() || 'Dokumentasi Kegiatan Harian';
                     const kategori = document.querySelector('input[name="kategori"]:checked')?.value || 'Kinerja';
                     const pegawai = `${appState.profile.nama} (${appState.profile.jabatan})`;
@@ -1078,10 +1211,10 @@
                     const textX = pad + 16;
                     let textY = height - bannerHeight + 12 + fontSizeMain;
 
-                    // Baris 1: Tanggal & Jam + Kategori
+                    // Baris 1: Tanggal & Rentang Jam (Mulai - Selesai) + Kategori
                     ctx.font = `bold ${fontSizeMain}px Inter, sans-serif`;
                     ctx.fillStyle = '#fde047';
-                    ctx.fillText(`📅 ${tanggal}  ⏰ ${jam} WIB  •  ${kategori}`, textX, textY);
+                    ctx.fillText(`📅 ${tanggal}  ⏰ ${jamMulai} - ${jamSelesai} WIB  •  ${kategori}`, textX, textY);
 
                     // Baris 2: Nama Kegiatan (potong jika terlalu panjang)
                     textY += fontSizeSub + 10;
@@ -1095,13 +1228,14 @@
                     textY += fontSizeSmall + 9;
                     ctx.font = `400 ${fontSizeSmall}px Inter, sans-serif`;
                     ctx.fillStyle = '#cbd5e1';
-                    ctx.fillText(`👤 ${pegawai}  |  Terverifikasi SiKinerja AI`, textX, textY);
+                    ctx.fillText(`👤 ${pegawai}  |  Terverifikasi`, textX, textY);
 
                     // Konversi ke DataURL & Blob JPEG
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
                     canvas.toBlob((blob) => {
                         const cleanSlug = kegiatan.toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 25);
-                        const filename = `${tanggal.replace(/-/g, '')}_${jam.replace(':', '')}_${cleanSlug || 'foto'}.jpg`;
+                        const timeSlug = `${jamMulai.replace(':', '')}-${jamSelesai.replace(':', '')}`;
+                        const filename = `${tanggal.replace(/-/g, '')}_${timeSlug}_${cleanSlug || 'foto'}.jpg`;
 
                         appState.currentPhoto.watermarkedDataUrl = dataUrl;
                         appState.currentPhoto.watermarkedBlob = blob;
@@ -1317,12 +1451,19 @@
             event.preventDefault();
 
             const tanggal = document.getElementById('input-tanggal').value;
-            const jam = document.getElementById('input-jam').value;
+            const jamMulai = document.getElementById('input-jam-mulai').value;
+            const jamSelesai = document.getElementById('input-jam-selesai').value;
             const kegiatan = document.getElementById('input-kegiatan').value.trim();
             const kategori = document.querySelector('input[name="kategori"]:checked')?.value || 'Rapat/Koordinasi';
 
-            if (!tanggal || !jam || !kegiatan) {
-                showToast('Lengkapi Tanggal, Jam, dan Uraian Kegiatan.', 'error');
+            if (!tanggal || !jamMulai || !jamSelesai || !kegiatan) {
+                showToast('Lengkapi Tanggal, Jam Mulai, Jam Selesai, dan Uraian Kegiatan.', 'error');
+                return;
+            }
+
+            const durationInfo = calculateDurationInfo(jamMulai, jamSelesai);
+            if (!durationInfo.isValid) {
+                showToast('Jam Selesai harus lebih akhir daripada Jam Mulai.', 'error');
                 return;
             }
 
@@ -1389,7 +1530,10 @@
                 const newEntry = {
                     id: 'log-' + Date.now(),
                     tanggal,
-                    jam,
+                    jamMulai,
+                    jamSelesai,
+                    durasiMenit: durationInfo.minutes,
+                    durasiText: durationInfo.text,
                     kategori,
                     kegiatan,
                     folderPath: folderInfo.fullPath,
@@ -1438,23 +1582,49 @@
             renderHistoryList();
         }
 
+        function openPhotoModal(dataUrl, caption) {
+            if (!dataUrl) return;
+            document.getElementById('modal-photo-img').src = dataUrl;
+            document.getElementById('modal-photo-caption').textContent = caption || '';
+            document.getElementById('photo-modal').classList.remove('hidden');
+        }
+
+        function closePhotoModal() {
+            document.getElementById('photo-modal').classList.add('hidden');
+            document.getElementById('modal-photo-img').src = '';
+        }
+
         function renderHistoryList() {
             const container = document.getElementById('history-list-container');
             const filterDate = document.getElementById('filter-tanggal').value;
 
+            const filteredLogs = filterDate 
+                ? appState.logs.filter(item => item.tanggal === filterDate)
+                : appState.logs;
+
+            // Hitung total menit durasi kinerja pada data yang tampil
+            const totalMinutes = filteredLogs.reduce((acc, item) => {
+                if (typeof item.durasiMenit === 'number' && item.durasiMenit > 0) {
+                    return acc + item.durasiMenit;
+                }
+                const start = item.jamMulai || item.jam || '08:00';
+                const end = item.jamSelesai || addMinutesToTime(start, 60);
+                const calc = calculateDurationInfo(start, end);
+                return acc + (calc.isValid ? calc.minutes : 0);
+            }, 0);
+
+            const totalHours = Math.floor(totalMinutes / 60);
+            const remMinutes = totalMinutes % 60;
+
             // Update statistik ringkas
-            document.getElementById('stat-total').textContent = appState.logs.length;
-            document.getElementById('stat-foto').textContent = appState.logs.filter(l => l.photoDataUrl || l.photoName).length;
-            document.getElementById('stat-drive').textContent = appState.logs.filter(l => l.syncMode === 'Live Google Drive').length;
+            document.getElementById('stat-total').textContent = filteredLogs.length;
+            document.getElementById('stat-durasi').textContent = `${totalHours}j ${remMinutes}m`;
+            document.getElementById('stat-drive').textContent = filteredLogs.filter(l => l.syncMode === 'Live Google Drive').length;
             updateNavBadge();
 
             // Update subtitle untuk mode Print PDF
             document.getElementById('print-subtitle').textContent = 
-                `Pegawai: ${appState.profile.nama} (${appState.profile.jabatan}) • Filter: ${filterDate || 'Semua Tanggal'}`;
-
-            const filteredLogs = filterDate 
-                ? appState.logs.filter(item => item.tanggal === filterDate)
-                : appState.logs;
+                `Pegawai: ${appState.profile.nama} (${appState.profile.jabatan}) • Filter: ${filterDate || 'Semua Tanggal'} • Total Durasi: ${totalHours} jam ${remMinutes} menit`;
 
             if (filteredLogs.length === 0) {
                 container.innerHTML = `
@@ -1476,6 +1646,11 @@
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                     : 'bg-amber-50 text-amber-700 border-amber-200';
                 
+                const startT = item.jamMulai || item.jam || '08:00';
+                const endT = item.jamSelesai || addMinutesToTime(startT, 60);
+                const durLabel = item.durasiText || calculateDurationInfo(startT, endT).text;
+                const safeCaption = escapeHtml(`${item.tanggal} (${startT} - ${endT} WIB) • ${item.kegiatan}`);
+
                 const driveLinkHtml = item.driveFolderUrl 
                     ? `<a href="${item.driveFolderUrl}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:underline mt-1">
                          <i data-lucide="external-link" class="w-3 h-3"></i> Buka Folder di Google Drive
@@ -1485,9 +1660,12 @@
                 return `
                     <article class="bg-white rounded-3xl p-4 shadow-android border border-slate-100 space-y-2.5">
                         <div class="flex items-start justify-between gap-2">
-                            <div class="flex items-center gap-2 flex-wrap">
+                            <div class="flex items-center gap-1.5 flex-wrap">
                                 <span class="px-2.5 py-1 rounded-xl bg-brand-50 text-brand-700 text-[11px] font-bold">
-                                    ${item.tanggal} • ${item.jam}
+                                    ${item.tanggal} • ${startT} - ${endT} WIB
+                                </span>
+                                <span class="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-bold">
+                                    ${durLabel}
                                 </span>
                                 <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-semibold">
                                     ${item.kategori}
@@ -1501,8 +1679,11 @@
                         <p class="text-sm font-medium text-slate-800 leading-snug">${escapeHtml(item.kegiatan)}</p>
 
                         ${item.photoDataUrl ? `
-                            <div class="rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
-                                <img src="${item.photoDataUrl}" alt="Bukti Kegiatan" class="w-full max-h-48 object-cover">
+                            <div onclick="openPhotoModal('${item.photoDataUrl}', '${safeCaption}')" class="cursor-pointer group relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
+                                <img src="${item.photoDataUrl}" alt="Bukti Kegiatan" class="w-full max-h-48 object-cover group-hover:scale-[1.02] transition-transform">
+                                <span class="absolute bottom-2 right-2 px-2 py-1 rounded-lg bg-black/65 text-white text-[10px] font-medium flex items-center gap-1 backdrop-blur-sm">
+                                    <i data-lucide="maximize-2" class="w-3 h-3"></i> Perbesar
+                                </span>
                             </div>
                         ` : ''}
 
@@ -1561,18 +1742,25 @@
                 return;
             }
 
-            const headers = ['No', 'Tanggal', 'Jam', 'Kategori', 'Uraian Kegiatan', 'File Foto', 'File Dokumen', 'Folder Tujuan Google Drive', 'Status Sync'];
-            const rows = dataToExport.map((item, idx) => [
-                idx + 1,
-                item.tanggal,
-                item.jam,
-                `"${(item.kategori || '').replace(/"/g, '""')}"`,
-                `"${(item.kegiatan || '').replace(/"/g, '""')}"`,
-                `"${item.photoName || '-'}"`,
-                `"${item.docName || '-'}"`,
-                `"${item.folderPath}"`,
-                item.syncMode
-            ]);
+            const headers = ['No', 'Tanggal', 'Jam Mulai', 'Jam Selesai', 'Durasi', 'Kategori', 'Uraian Kegiatan', 'Bukti Foto', 'Bukti Dokumen', 'Folder Tujuan Google Drive', 'Status Sync'];
+            const rows = dataToExport.map((item, idx) => {
+                const startT = item.jamMulai || item.jam || '08:00';
+                const endT = item.jamSelesai || addMinutesToTime(startT, 60);
+                const durLabel = item.durasiText || calculateDurationInfo(startT, endT).text;
+                return [
+                    idx + 1,
+                    item.tanggal,
+                    startT,
+                    endT,
+                    `"${durLabel}"`,
+                    `"${(item.kategori || '').replace(/"/g, '""')}"`,
+                    `"${(item.kegiatan || '').replace(/"/g, '""')}"`,
+                    `"${item.photoName || '-'}"`,
+                    `"${item.docName || '-'}"`,
+                    `"${item.folderPath}"`,
+                    item.syncMode
+                ];
+            });
 
             const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
