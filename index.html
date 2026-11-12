@@ -1237,7 +1237,8 @@
                     textY += fontSizeSmall + 9;
                     ctx.font = `400 ${fontSizeSmall}px Inter, sans-serif`;
                     ctx.fillStyle = '#cbd5e1';
-                    ctx.fillText(`👤 ${pegawai}  |  Terverifikasi`, textX, textY);
+                    //ctx.fillText(`👤 ${pegawai}  |  Terverifikasi`, textX, textY);
+                    ctx.fillText(`👤 ${pegawai}`, textX, textY);
 
                     // Konversi ke DataURL & Blob JPEG
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
