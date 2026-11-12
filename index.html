@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>e-Kinerja AI - Asisten Dokumentasi Kinerja</title>
+    <title>SiKinerja AI - Asisten Dokumentasi Kinerja</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -304,7 +304,14 @@
                                 <input type="radio" name="kategori" value="Pengembangan Sistem/IT" class="peer sr-only">
                                 <div class="p-2.5 rounded-2xl border border-slate-200 bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 text-slate-600 text-xs font-medium flex items-center gap-2 transition">
                                     <i data-lucide="laptop" class="w-4 h-4 shrink-0"></i>
-                                    <span class="truncate">Pengembangan Sistem/IT</span>
+                                    <span class="truncate">SIMPUS / IT</span>
+                                </div>
+                            </label>
+							<label class="cursor-pointer">
+                                <input type="radio" name="kategori" value="Mengolah Data Kesmas" class="peer sr-only">
+                                <div class="p-2.5 rounded-2xl border border-slate-200 bg-slate-50 peer-checked:bg-brand-50 peer-checked:border-brand-500 peer-checked:text-brand-700 text-slate-600 text-xs font-medium flex items-center gap-2 transition">
+                                    <i data-lucide="laptop" class="w-4 h-4 shrink-0"></i>
+                                    <span class="truncate">Mengolah Data</span>
                                 </div>
                             </label>
                             <label class="cursor-pointer col-span-2">
@@ -1000,7 +1007,9 @@
                 detectedCategory = 'Monev';
 			} else if (/(apel|upacara|gladi)/.test(lower)) {
                 detectedCategory = 'Apel';
-            } else if (/(rapat|koordinasi|briefing|zoom|meeting|diskusi|audiensi)/.test(lower)) {
+            } else if (/(data|mengolah|entri)/.test(lower)) {
+                detectedCategory = 'Mengolah Data';
+			} else if (/(rapat|koordinasi|briefing|zoom|meeting|diskusi|audiensi)/.test(lower)) {
                 detectedCategory = 'Rapat/Koordinasi';
 			} else {
                 detectedCategory = 'Lainnya';
