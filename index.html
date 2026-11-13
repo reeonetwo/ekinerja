@@ -521,6 +521,18 @@
                             Cetak / PDF
                         </button>
                     </div>
+
+                    <!-- Banner & Tombol Sinkronisasi Otomatis Data Lokal ke Google Drive -->
+                    <div id="pending-sync-banner" class="hidden pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <div class="text-[11px] text-amber-700 flex items-center gap-1.5">
+                            <i data-lucide="cloud-off" class="w-4 h-4 shrink-0 text-amber-500"></i>
+                            <span><strong id="pending-sync-count">0</strong> data lokal belum tersinkron ke Drive</span>
+                        </div>
+                        <button type="button" onclick="syncLocalLogsToGoogleDrive(false)" class="shrink-0 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                            <span>Sync Sekarang</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Header Khusus Saat Dicetak (Print PDF) -->
@@ -1380,13 +1392,16 @@
                 tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: appState.drive.clientId,
                     scope: 'https://www.googleapis.com/auth/drive.file',
-                    callback: (tokenResponse) => {
+                    callback: async (tokenResponse) => {
                         if (tokenResponse && tokenResponse.access_token) {
                             appState.drive.accessToken = tokenResponse.access_token;
                             appState.drive.tokenExpiry = Date.now() + (tokenResponse.expires_in * 1000);
                             appState.drive.isLive = true;
                             updateDriveConnectionUI(true);
                             showToast('Berhasil terhubung ke Google Drive pribadi!', 'success');
+
+                            // Jalankan sinkronisasi otomatis untuk data lokal yang belum terupload
+                            await syncLocalLogsToGoogleDrive(true);
                         }
                     },
                 });
@@ -1496,6 +1511,135 @@
                 throw new Error(`Gagal mengupload file ${fileName}`);
             }
             return await uploadRes.json();
+        }
+
+        /**
+         * Konversi DataURL (Base64) foto lokal menjadi Blob agar bisa diupload otomatis saat sinkronisasi
+         */
+        function dataUrlToBlob(dataUrl) {
+            const parts = dataUrl.split(',');
+            const mimeMatch = parts[0].match(/:(.*?);/);
+            const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+            const bstr = atob(parts[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) {
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new Blob([u8arr], { type: mime });
+        }
+
+        let isAutoSyncing = false;
+
+        /**
+         * Sinkronisasi otomatis seluruh data riwayat lokal (status 'Simulasi') ke Google Drive
+         * saat status Google Drive API Live terhubung.
+         */
+        async function syncLocalLogsToGoogleDrive(isAutoTriggered = true) {
+            if (isAutoSyncing) return;
+
+            const isTokenValid = appState.drive.isLive && appState.drive.accessToken && Date.now() < appState.drive.tokenExpiry;
+            if (!isTokenValid) {
+                if (!isAutoTriggered) {
+                    showToast('Hubungkan Google Drive Live terlebih dahulu untuk menyinkronkan data.', 'error');
+                }
+                return;
+            }
+
+            const pendingLogs = appState.logs.filter(item => item.syncMode !== 'Live Google Drive');
+            if (pendingLogs.length === 0) {
+                if (!isAutoTriggered) {
+                    showToast('Semua data kinerja sudah tersinkron dengan Google Drive.', 'info');
+                }
+                return;
+            }
+
+            isAutoSyncing = true;
+            const overlay = document.getElementById('upload-overlay');
+            const titleText = document.getElementById('upload-overlay-title');
+            const stepText = document.getElementById('upload-overlay-step');
+            const progressBar = document.getElementById('upload-progress-bar');
+
+            const originalTitle = titleText.textContent;
+            titleText.textContent = 'Sinkronisasi Otomatis ke Drive...';
+            overlay.classList.remove('hidden');
+            progressBar.style.width = '10%';
+
+            let syncedCount = 0;
+            const folderCache = {};
+
+            try {
+                for (let i = 0; i < pendingLogs.length; i++) {
+                    const item = pendingLogs[i];
+                    const folderInfo = buildFolderPathInfo(item.tanggal);
+                    const pct = Math.round(((i + 0.5) / pendingLogs.length) * 90) + 5;
+                    progressBar.style.width = `${pct}%`;
+                    stepText.textContent = `Menyinkronkan (${i + 1}/${pendingLogs.length}): ${item.kegiatan.substring(0, 35)}...`;
+
+                    // Gunakan cache folder per tanggal agar hemat request API
+                    let dateFolder = folderCache[item.tanggal];
+                    if (!dateFolder) {
+                        const rootFolder = await findOrCreateDriveFolder(folderInfo.root, 'root');
+                        const yearFolder = await findOrCreateDriveFolder(folderInfo.year, rootFolder.id);
+                        const monthFolder = await findOrCreateDriveFolder(folderInfo.month, yearFolder.id);
+                        dateFolder = await findOrCreateDriveFolder(folderInfo.date, monthFolder.id);
+                        folderCache[item.tanggal] = dateFolder;
+                    }
+
+                    item.driveFolderUrl = dateFolder.webViewLink;
+
+                    // Upload foto lokal ber-watermark jika tersedia
+                    if (item.photoDataUrl && !item.photoDriveUrl) {
+                        const photoBlob = dataUrlToBlob(item.photoDataUrl);
+                        const photoFileName = item.photoName || `${item.tanggal.replace(/-/g, '')}_bukti_foto.jpg`;
+                        const uploadedPhoto = await uploadFileToDriveFolder(photoBlob, photoFileName, dateFolder.id);
+                        item.photoDriveUrl = uploadedPhoto.webViewLink || (uploadedPhoto.id ? `https://drive.google.com/file/d/${uploadedPhoto.id}/view` : null);
+                    }
+
+                    // Buat file log ringkasan .txt di folder tanggal agar catatan kinerja tetap terarsip di Drive
+                    const startT = item.jamMulai || item.jam || '08:00';
+                    const endT = item.jamSelesai || addMinutesToTime(startT, 60);
+                    const summaryText = [
+                        'DOKUMENTASI LOG KINERJA - SIKINERJA AI',
+                        `Pegawai   : ${appState.profile.nama} (${appState.profile.jabatan})`,
+                        `Tanggal   : ${item.tanggal}`,
+                        `Waktu     : ${startT} - ${endT} WIB (${item.durasiText || ''})`,
+                        `Kategori  : ${item.kategori}`,
+                        `Kegiatan  : ${item.kegiatan}`,
+                        `Output    : ${item.hasilJumlah || '1'} ${item.hasilSatuan || 'Kegiatan'}`,
+                        `Bukti Foto: ${item.photoDriveUrl || item.photoName || '-'}`,
+                        `Dokumen   : ${item.docName || '-'}`
+                    ].join('\n');
+
+                    const logSlug = item.kegiatan.toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 20);
+                    const logFileName = `${item.tanggal.replace(/-/g, '')}_${startT.replace(':', '')}_log_${logSlug || 'kinerja'}.txt`;
+                    const logBlob = new Blob([summaryText], { type: 'text/plain;charset=utf-8' });
+                    const uploadedLog = await uploadFileToDriveFolder(logBlob, logFileName, dateFolder.id);
+
+                    if (!item.docDriveUrl && uploadedLog) {
+                        item.docDriveUrl = uploadedLog.webViewLink || (uploadedLog.id ? `https://drive.google.com/file/d/${uploadedLog.id}/view` : null);
+                    }
+
+                    item.syncMode = 'Live Google Drive';
+                    syncedCount++;
+                }
+
+                progressBar.style.width = '100%';
+                saveLogsToLocal();
+                renderHistoryList();
+                overlay.classList.add('hidden');
+                titleText.textContent = originalTitle;
+                showToast(`${syncedCount} catatan lokal berhasil disinkronkan ke Google Drive!`, 'success');
+            } catch (err) {
+                console.error('Gagal sinkronisasi otomatis:', err);
+                saveLogsToLocal();
+                renderHistoryList();
+                overlay.classList.add('hidden');
+                titleText.textContent = originalTitle;
+                showToast(`Sinkronisasi terhenti (${syncedCount}/${pendingLogs.length} berhasil): ${err.message}`, 'error');
+            } finally {
+                isAutoSyncing = false;
+            }
         }
 
         // -------------------------------------------------------------------
@@ -1687,6 +1831,18 @@
             document.getElementById('stat-durasi').textContent = `${totalHours}j ${remMinutes}m`;
             document.getElementById('stat-drive').textContent = filteredLogs.filter(l => l.syncMode === 'Live Google Drive').length;
             updateNavBadge();
+
+            // Tampilkan/sembunyikan banner sinkronisasi otomatis untuk data lokal yang belum tersinkron
+            const totalPendingSync = appState.logs.filter(l => l.syncMode !== 'Live Google Drive').length;
+            const pendingBanner = document.getElementById('pending-sync-banner');
+            if (pendingBanner) {
+                if (totalPendingSync > 0) {
+                    document.getElementById('pending-sync-count').textContent = totalPendingSync;
+                    pendingBanner.classList.remove('hidden');
+                } else {
+                    pendingBanner.classList.add('hidden');
+                }
+            }
 
             // Update subtitle untuk mode Print PDF
             document.getElementById('print-subtitle').textContent = 
