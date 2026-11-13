@@ -332,6 +332,32 @@
                             class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition"></textarea>
                     </div>
 
+                    <!-- Hasil / Output Kinerja (2 Kolom: Jumlah & Satuan) -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Hasil / Output Kinerja <span class="text-rose-500">*</span></label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <input type="number" id="input-hasil-jumlah" min="1" step="any" value="1" required
+                                    placeholder="Jumlah (misal: 2)"
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white">
+                            </div>
+                            <div>
+                                <input type="text" id="input-hasil-satuan" list="satuan-options" value="Kegiatan" required
+                                    placeholder="Satuan (Dokumen/Kegiatan)"
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white">
+                                <datalist id="satuan-options">
+                                    <option value="Kegiatan">
+                                    <option value="Dokumen">
+                                    <option value="Laporan">
+                                    <option value="Berkas">
+                                    <option value="Notulensi">
+                                    <option value="Surat">
+                                    <option value="Paket">
+                                </datalist>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Bukti Dukung Foto Kegiatan dengan Auto Watermark -->
                     <div class="pt-1">
                         <div class="flex items-center justify-between mb-1.5">
@@ -503,8 +529,11 @@
                     <p class="text-xs text-slate-600" id="print-subtitle">Dicetak melalui SiKinerja AI</p>
                 </div>
 
+                <!-- Tabel Khusus Output Cetak / PDF -->
+                <div id="print-table-container" class="hidden print:block mb-6"></div>
+
                 <!-- Daftar Log Kinerja -->
-                <div id="history-list-container" class="space-y-3">
+                <div id="history-list-container" class="space-y-3 print:hidden">
                     <!-- Item dirender lewat JavaScript -->
                 </div>
             </section>
@@ -752,10 +781,14 @@
                         durasiText: '1 jam 30 menit',
                         kategori: 'Rapat/Koordinasi',
                         kegiatan: 'Apel pagi dan koordinasi pembagian tugas evaluasi triwulan IV',
+                        hasilJumlah: '1',
+                        hasilSatuan: 'Kegiatan',
                         folderPath: buildFolderPathInfo(todayStr).fullPath,
                         photoDataUrl: null,
                         photoName: '20261112_0800-0930_apel_pagi.jpg',
+                        photoDriveUrl: null,
                         docName: 'Notulensi_Rapat_Triwulan.pdf',
+                        docDriveUrl: null,
                         syncMode: 'Simulasi',
                         driveFolderUrl: null,
                         createdAt: new Date().toISOString()
@@ -1028,6 +1061,17 @@
                 cleanActivity = cleanActivity.charAt(0).toUpperCase() + cleanActivity.slice(1);
             } else {
                 cleanActivity = rawText;
+            }
+
+            // 5. Deteksi Otomatis Hasil Kinerja (Jumlah & Satuan, misal: "2 dokumen", "1 kegiatan")
+            const outputMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*(dokumen|kegiatan|laporan|berkas|notulensi|surat|paket|kali)\b/i);
+            if (outputMatch) {
+                document.getElementById('input-hasil-jumlah').value = outputMatch[1].replace(',', '.');
+                const unitRaw = outputMatch[2];
+                document.getElementById('input-hasil-satuan').value = unitRaw.charAt(0).toUpperCase() + unitRaw.slice(1).toLowerCase();
+            } else {
+                document.getElementById('input-hasil-jumlah').value = '1';
+                document.getElementById('input-hasil-satuan').value = detectedCategory === 'Administrasi/Laporan' ? 'Dokumen' : 'Kegiatan';
             }
 
             // Terapkan ke Form
@@ -1464,6 +1508,8 @@
             const jamMulai = document.getElementById('input-jam-mulai').value;
             const jamSelesai = document.getElementById('input-jam-selesai').value;
             const kegiatan = document.getElementById('input-kegiatan').value.trim();
+            const hasilJumlah = document.getElementById('input-hasil-jumlah').value.trim() || '1';
+            const hasilSatuan = document.getElementById('input-hasil-satuan').value.trim() || 'Kegiatan';
             const kategori = document.querySelector('input[name="kategori"]:checked')?.value || 'Rapat/Koordinasi';
 
             if (!tanggal || !jamMulai || !jamSelesai || !kegiatan) {
@@ -1486,6 +1532,8 @@
             progressBar.style.width = '25%';
 
             let driveFolderUrl = null;
+            let photoDriveUrl = null;
+            let docDriveUrl = null;
             let syncMode = 'Simulasi';
 
             try {
@@ -1508,22 +1556,24 @@
                     // Upload Foto Ber-Watermark jika ada
                     if (appState.currentPhoto.watermarkedBlob) {
                         stepText.textContent = `Mengupload foto bukti: ${appState.currentPhoto.filename}...`;
-                        await uploadFileToDriveFolder(
+                        const uploadedPhoto = await uploadFileToDriveFolder(
                             appState.currentPhoto.watermarkedBlob,
                             appState.currentPhoto.filename,
                             dateFolder.id
                         );
+                        photoDriveUrl = uploadedPhoto.webViewLink || (uploadedPhoto.id ? `https://drive.google.com/file/d/${uploadedPhoto.id}/view` : null);
                     }
                     progressBar.style.width = '85%';
 
                     // Upload Dokumen Pendukung jika ada
                     if (appState.currentDoc.rawFile) {
                         stepText.textContent = `Mengupload dokumen: ${appState.currentDoc.filename}...`;
-                        await uploadFileToDriveFolder(
+                        const uploadedDoc = await uploadFileToDriveFolder(
                             appState.currentDoc.rawFile,
                             appState.currentDoc.filename,
                             dateFolder.id
                         );
+                        docDriveUrl = uploadedDoc.webViewLink || (uploadedDoc.id ? `https://drive.google.com/file/d/${uploadedDoc.id}/view` : null);
                     }
                     progressBar.style.width = '100%';
                 } else {
@@ -1546,10 +1596,14 @@
                     durasiText: durationInfo.text,
                     kategori,
                     kegiatan,
+                    hasilJumlah,
+                    hasilSatuan,
                     folderPath: folderInfo.fullPath,
                     photoDataUrl: appState.currentPhoto.watermarkedDataUrl || null,
                     photoName: appState.currentPhoto.filename || null,
+                    photoDriveUrl,
                     docName: appState.currentDoc.filename || null,
+                    docDriveUrl,
                     syncMode,
                     driveFolderUrl,
                     createdAt: new Date().toISOString()
@@ -1560,6 +1614,8 @@
 
                 // Reset Form
                 document.getElementById('input-kegiatan').value = '';
+                document.getElementById('input-hasil-jumlah').value = '1';
+                document.getElementById('input-hasil-satuan').value = 'Kegiatan';
                 document.getElementById('ai-prompt-input').value = '';
                 document.getElementById('ai-status-feedback').classList.add('hidden');
                 removePhoto();
@@ -1636,6 +1692,61 @@
             document.getElementById('print-subtitle').textContent = 
                 `Pegawai: ${appState.profile.nama} (${appState.profile.jabatan}) • Filter: ${filterDate || 'Semua Tanggal'} • Total Durasi: ${totalHours} jam ${remMinutes} menit`;
 
+            // Render Tabel Output Cetak / PDF (memuat 2 kolom Hasil Kinerja & Link Google Drive)
+            const printTableContainer = document.getElementById('print-table-container');
+            if (filteredLogs.length === 0) {
+                printTableContainer.innerHTML = '<p class="text-xs text-slate-500">Tidak ada data kinerja untuk dicetak.</p>';
+            } else {
+                const printRowsHtml = filteredLogs.map((item, idx) => {
+                    const startT = item.jamMulai || item.jam || '08:00';
+                    const endT = item.jamSelesai || addMinutesToTime(startT, 60);
+                    const jml = item.hasilJumlah || '1';
+                    const sat = item.hasilSatuan || 'Kegiatan';
+                    const links = [];
+                    if (item.photoDriveUrl) {
+                        links.push(`<a href="${item.photoDriveUrl}" target="_blank" class="text-blue-700 underline break-all">Foto: ${item.photoDriveUrl}</a>`);
+                    } else if (item.photoName) {
+                        links.push(`<span>Foto: ${escapeHtml(item.photoName)} (Lokal)</span>`);
+                    }
+                    if (item.docDriveUrl) {
+                        links.push(`<a href="${item.docDriveUrl}" target="_blank" class="text-blue-700 underline break-all">Dokumen: ${item.docDriveUrl}</a>`);
+                    } else if (item.docName) {
+                        links.push(`<span>Dokumen: ${escapeHtml(item.docName)} (Lokal)</span>`);
+                    }
+                    if (links.length === 0 && item.driveFolderUrl) {
+                        links.push(`<a href="${item.driveFolderUrl}" target="_blank" class="text-blue-700 underline break-all">Folder: ${item.driveFolderUrl}</a>`);
+                    }
+                    const linkCell = links.length > 0 ? links.join('<br>') : `<span class="text-slate-400">${escapeHtml(item.folderPath)}</span>`;
+
+                    return `
+                        <tr class="border-b border-slate-300 align-top">
+                            <td class="p-1.5 border border-slate-300 text-center">${idx + 1}</td>
+                            <td class="p-1.5 border border-slate-300 whitespace-nowrap">${item.tanggal}<br>${startT} - ${endT}</td>
+                            <td class="p-1.5 border border-slate-300">${escapeHtml(item.kegiatan)}<br><span class="text-[9px] text-slate-500">[${escapeHtml(item.kategori)}]</span></td>
+                            <td class="p-1.5 border border-slate-300 text-center font-semibold">${escapeHtml(jml)}</td>
+                            <td class="p-1.5 border border-slate-300">${escapeHtml(sat)}</td>
+                            <td class="p-1.5 border border-slate-300 text-[9px]">${linkCell}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                printTableContainer.innerHTML = `
+                    <table class="w-full border-collapse border border-slate-400 text-[10px] text-left">
+                        <thead>
+                            <tr class="bg-slate-100 font-bold text-slate-800">
+                                <th class="p-1.5 border border-slate-400 text-center w-8">No</th>
+                                <th class="p-1.5 border border-slate-400 w-24">Tanggal & Jam</th>
+                                <th class="p-1.5 border border-slate-400">Uraian Kegiatan</th>
+                                <th class="p-1.5 border border-slate-400 text-center w-14">Jumlah</th>
+                                <th class="p-1.5 border border-slate-400 w-20">Satuan</th>
+                                <th class="p-1.5 border border-slate-400">Link Google Drive Bukti</th>
+                            </tr>
+                        </thead>
+                        <tbody>${printRowsHtml}</tbody>
+                    </table>
+                `;
+            }
+
             if (filteredLogs.length === 0) {
                 container.innerHTML = `
                     <div class="bg-white rounded-3xl p-8 text-center shadow-android border border-slate-100">
@@ -1659,6 +1770,8 @@
                 const startT = item.jamMulai || item.jam || '08:00';
                 const endT = item.jamSelesai || addMinutesToTime(startT, 60);
                 const durLabel = item.durasiText || calculateDurationInfo(startT, endT).text;
+                const jmlHasil = item.hasilJumlah || '1';
+                const satHasil = item.hasilSatuan || 'Kegiatan';
                 const safeCaption = escapeHtml(`${item.tanggal} (${startT} - ${endT} WIB) • ${item.kegiatan}`);
 
                 const driveLinkHtml = item.driveFolderUrl 
@@ -1666,6 +1779,32 @@
                          <i data-lucide="external-link" class="w-3 h-3"></i> Buka Folder di Google Drive
                        </a>`
                     : `<span class="text-[10px] font-mono text-slate-400 block truncate mt-1">📁 ${item.folderPath}</span>`;
+
+                const photoChipHtml = item.photoName ? (
+                    item.photoDriveUrl
+                        ? `<a href="${item.photoDriveUrl}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[11px] bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-xl hover:bg-blue-100">
+                             <i data-lucide="image" class="w-3.5 h-3.5 text-blue-600"></i>
+                             <span class="truncate max-w-[130px]">${escapeHtml(item.photoName)}</span>
+                             <i data-lucide="external-link" class="w-3 h-3 shrink-0"></i>
+                           </a>`
+                        : `<span class="inline-flex items-center gap-1 text-[11px] bg-slate-100 text-slate-700 px-2.5 py-1 rounded-xl">
+                             <i data-lucide="image" class="w-3.5 h-3.5 text-brand-600"></i>
+                             <span class="truncate max-w-[140px]">${escapeHtml(item.photoName)}</span>
+                           </span>`
+                ) : '';
+
+                const docChipHtml = item.docName ? (
+                    item.docDriveUrl
+                        ? `<a href="${item.docDriveUrl}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[11px] bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-xl hover:bg-blue-100">
+                             <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-600"></i>
+                             <span class="truncate max-w-[130px]">${escapeHtml(item.docName)}</span>
+                             <i data-lucide="external-link" class="w-3 h-3 shrink-0"></i>
+                           </a>`
+                        : `<span class="inline-flex items-center gap-1 text-[11px] bg-slate-100 text-slate-700 px-2.5 py-1 rounded-xl">
+                             <i data-lucide="file-text" class="w-3.5 h-3.5 text-rose-600"></i>
+                             <span class="truncate max-w-[140px]">${escapeHtml(item.docName)}</span>
+                           </span>`
+                ) : '';
 
                 return `
                     <article class="bg-white rounded-3xl p-4 shadow-android border border-slate-100 space-y-2.5">
@@ -1676,6 +1815,9 @@
                                 </span>
                                 <span class="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-bold">
                                     ${durLabel}
+                                </span>
+                                <span class="px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 text-[10px] font-bold">
+                                    Output: ${escapeHtml(jmlHasil)} ${escapeHtml(satHasil)}
                                 </span>
                                 <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-semibold">
                                     ${item.kategori}
@@ -1698,18 +1840,8 @@
                         ` : ''}
 
                         <div class="flex flex-wrap items-center gap-2 pt-1">
-                            ${item.photoName ? `
-                                <span class="inline-flex items-center gap-1 text-[11px] bg-slate-100 text-slate-700 px-2.5 py-1 rounded-xl">
-                                    <i data-lucide="image" class="w-3.5 h-3.5 text-brand-600"></i>
-                                    <span class="truncate max-w-[140px]">${escapeHtml(item.photoName)}</span>
-                                </span>
-                            ` : ''}
-                            ${item.docName ? `
-                                <span class="inline-flex items-center gap-1 text-[11px] bg-slate-100 text-slate-700 px-2.5 py-1 rounded-xl">
-                                    <i data-lucide="file-text" class="w-3.5 h-3.5 text-rose-600"></i>
-                                    <span class="truncate max-w-[140px]">${escapeHtml(item.docName)}</span>
-                                </span>
-                            ` : ''}
+                            ${photoChipHtml}
+                            ${docChipHtml}
                         </div>
 
                         <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
@@ -1735,10 +1867,10 @@
         }
 
         function clearAllLocalData() {
-            localStorage.removeItem(STORAGE_KEY_LOGS);
             appState.logs = [];
+            localStorage.removeItem(STORAGE_KEY_LOGS);
             renderHistoryList();
-            showToast('Seluruh riwayat lokal telah dibersihkan.', 'info');
+            showToast('Seluruh cache riwayat lokal telah dibersihkan.', 'info');
         }
 
         function exportToCSV() {
@@ -1748,15 +1880,33 @@
                 : appState.logs;
 
             if (dataToExport.length === 0) {
-                showToast('Tidak ada data kinerja untuk diexport.', 'error');
+                showToast('Tidak ada data untuk diekspor ke CSV.', 'error');
                 return;
             }
 
-            const headers = ['No', 'Tanggal', 'Jam Mulai', 'Jam Selesai', 'Durasi', 'Kategori', 'Uraian Kegiatan', 'Bukti Foto', 'Bukti Dokumen', 'Folder Tujuan Google Drive', 'Status Sync'];
+            const headers = [
+                'No',
+                'Tanggal',
+                'Jam Mulai',
+                'Jam Selesai',
+                'Durasi',
+                'Kategori',
+                'Uraian Kegiatan',
+                'Jumlah Hasil',
+                'Satuan Hasil',
+                'Bukti Foto',
+                'Link Google Drive Foto',
+                'Bukti Dokumen',
+                'Link Google Drive Dokumen',
+                'Folder Tujuan Google Drive',
+                'Status Sync'
+            ];
             const rows = dataToExport.map((item, idx) => {
                 const startT = item.jamMulai || item.jam || '08:00';
                 const endT = item.jamSelesai || addMinutesToTime(startT, 60);
                 const durLabel = item.durasiText || calculateDurationInfo(startT, endT).text;
+                const jmlHasil = item.hasilJumlah || '1';
+                const satHasil = item.hasilSatuan || 'Kegiatan';
                 return [
                     idx + 1,
                     item.tanggal,
@@ -1765,8 +1915,12 @@
                     `"${durLabel}"`,
                     `"${(item.kategori || '').replace(/"/g, '""')}"`,
                     `"${(item.kegiatan || '').replace(/"/g, '""')}"`,
+                    `"${String(jmlHasil).replace(/"/g, '""')}"`,
+                    `"${String(satHasil).replace(/"/g, '""')}"`,
                     `"${item.photoName || '-'}"`,
+                    `"${item.photoDriveUrl || item.driveFolderUrl || '-'}"`,
                     `"${item.docName || '-'}"`,
+                    `"${item.docDriveUrl || item.driveFolderUrl || '-'}"`,
                     `"${item.folderPath}"`,
                     item.syncMode
                 ];
