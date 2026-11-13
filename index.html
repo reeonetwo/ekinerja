@@ -153,10 +153,10 @@
             <!-- Status Koneksi Google Drive Pill -->
             <div class="flex items-center justify-between bg-black/20 backdrop-blur-sm rounded-2xl px-3.5 py-2 border border-white/10">
                 <div class="flex items-center gap-2 overflow-hidden">
-                    <i data-lucide="hard-drive" id="drive-header-icon" class="w-4 h-4 text-amber-300 shrink-0"></i>
+                    <i data-lucide="hard-drive" id="drive-header-icon" class="w-4 h-4 text-rose-400 shrink-0"></i>
                     <div class="truncate">
-                        <span id="drive-mode-badge" class="text-xs font-semibold text-white block truncate">Mode Simulasi / Demo Lokal</span>
-                        <span id="drive-account-sub" class="text-[10px] text-indigo-200 block truncate">Tersimpan di memori HP & simulasi struktur Drive</span>
+                        <span id="drive-mode-badge" class="text-xs font-semibold text-white block truncate">Belum Terhubung ke Google</span>
+                        <span id="drive-account-sub" class="text-[10px] text-indigo-200 block truncate">Wajib hubungkan Drive & Google Sheets sebelum input</span>
                     </div>
                 </div>
                 <button id="header-connect-btn" onclick="handleQuickDriveAction()" class="shrink-0 ml-2 text-[11px] font-semibold px-3 py-1.5 rounded-xl bg-white text-brand-700 hover:bg-indigo-50 active:scale-95 transition shadow-sm">
@@ -172,6 +172,22 @@
             <!-- TAB 1: CATAT KINERJA                       -->
             <!-- ========================================== -->
             <section id="tab-catat" class="tab-content space-y-4">
+
+                <!-- BANNER PERINGATAN WAJIB KONEKSI GOOGLE DRIVE & SHEETS -->
+                <div id="connection-warning-banner" class="bg-rose-50 border border-rose-200 rounded-3xl p-3.5 flex items-center justify-between gap-3 shadow-sm">
+                    <div class="flex items-start gap-2.5">
+                        <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 mt-0.5">
+                            <i data-lucide="wifi-off" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-bold text-rose-800">Database Google Sheets Belum Terhubung</h3>
+                            <p class="text-[11px] text-rose-700 leading-snug mt-0.5">Data kinerja disimpan langsung ke Google Sheets & Google Drive. Silakan hubungkan akun Google Anda terlebih dahulu.</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="handleQuickDriveAction()" class="shrink-0 px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold shadow-sm active:scale-95 transition">
+                        Hubungkan
+                    </button>
+                </div>
 
                 <!-- 2. ASISTEN AI CERDAS (INPUT CEPAT TEKS / SUARA) -->
                 <div class="bg-white rounded-3xl p-4 shadow-android border border-indigo-100/80 relative overflow-hidden">
@@ -228,6 +244,22 @@
                         <button type="button" onclick="resetCurrentTime()" class="text-[11px] text-slate-500 hover:text-brand-600 flex items-center gap-1">
                             <i data-lucide="refresh-cw" class="w-3 h-3"></i> Waktu Sekarang
                         </button>
+                    </div>
+
+                    <!-- Rencana Aksi (Inputan Paling Atas - Dipilih Manual) -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label for="input-rencana-aksi" class="block text-xs font-semibold text-slate-600">
+                                Rencana Aksi <span class="text-rose-500">*</span>
+                            </label>
+                            <button type="button" onclick="switchTab('pengaturan')" class="text-[10px] font-semibold text-brand-600 hover:underline flex items-center gap-0.5">
+                                <i data-lucide="settings-2" class="w-3 h-3"></i> Kelola Daftar
+                            </button>
+                        </div>
+                        <select id="input-rencana-aksi" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+                            <!-- Diisi dinamis oleh renderRencanaAksiDropdown() -->
+                        </select>
                     </div>
 
                     <!-- Tanggal & Jam -->
@@ -469,7 +501,7 @@
                     <button type="submit" id="btn-submit-kinerja" 
                         class="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-display font-bold text-sm shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 active:scale-[0.98] transition">
                         <i data-lucide="cloud-upload" class="w-5 h-5"></i>
-                        <span id="btn-submit-text">Simpan & Arsipkan ke Drive</span>
+                        <span id="btn-submit-text">Simpan ke Google Sheets & Drive</span>
                     </button>
                 </form>
             </section>
@@ -491,7 +523,7 @@
                     </div>
                     <div class="bg-white p-3 rounded-2xl shadow-android border border-slate-100 text-center">
                         <span id="stat-drive" class="font-display font-extrabold text-xl text-blue-600 block">0</span>
-                        <span class="text-[11px] font-medium text-slate-500">Sync Drive</span>
+                        <span class="text-[11px] font-medium text-slate-500">Tersimpan Sheet</span>
                     </div>
                 </div>
 
@@ -522,31 +554,34 @@
                         </button>
                     </div>
 
-                    <!-- Banner & Tombol Sinkronisasi Otomatis Data Lokal ke Google Drive -->
-                    <div id="pending-sync-banner" class="hidden pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                        <div class="text-[11px] text-amber-700 flex items-center gap-1.5">
-                            <i data-lucide="cloud-off" class="w-4 h-4 shrink-0 text-amber-500"></i>
-                            <span><strong id="pending-sync-count">0</strong> data lokal belum tersinkron ke Drive</span>
+                    <!-- Info & Tombol Muat Ulang Database Google Sheets -->
+                    <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <div class="text-[11px] text-slate-600 truncate">
+                            <span id="sheet-db-info-label">Database: Belum terhubung ke Google Sheets</span>
                         </div>
-                        <button type="button" onclick="syncLocalLogsToGoogleDrive(false)" class="shrink-0 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition">
-                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                            <span>Sync Sekarang</span>
-                        </button>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <a id="open-sheet-link" href="#" target="_blank" rel="noopener" class="hidden px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] font-semibold flex items-center gap-1 transition">
+                                <i data-lucide="table" class="w-3.5 h-3.5"></i>
+                                <span>Buka Sheet</span>
+                            </a>
+                            <button type="button" onclick="fetchLogsFromGoogleSheet(false)" class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition">
+                                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                                <span>Muat Sheet</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Header Khusus Saat Dicetak (Print PDF) -->
-                <div class="hidden print:block mb-4 border-b-2 border-slate-800 pb-3">
-                    <h1 class="text-lg font-bold">LAPORAN DOKUMENTASI KINERJA HARIAN</h1>
-                    <p class="text-xs text-slate-600" id="print-subtitle">Dicetak melalui SiKinerja AI</p>
+                <!-- Header Khusus Saat Dicetak / Export PDF -->
+                <div id="print-area" class="hidden mb-4">
+                    <h2 class="font-display font-bold text-base text-slate-900">Laporan Dokumentasi Kinerja Harian</h2>
+                    <p id="print-subtitle" class="text-xs text-slate-600 mt-0.5 mb-3"></p>
+                    <div id="print-table-container"></div>
                 </div>
 
-                <!-- Tabel Khusus Output Cetak / PDF -->
-                <div id="print-table-container" class="hidden print:block mb-6"></div>
-
-                <!-- Daftar Log Kinerja -->
-                <div id="history-list-container" class="space-y-3 print:hidden">
-                    <!-- Item dirender lewat JavaScript -->
+                <!-- Daftar Kartu Riwayat Kinerja -->
+                <div id="history-list-container" class="space-y-3 no-print">
+                    <!-- Diisi dinamis oleh renderHistoryList() -->
                 </div>
             </section>
 
@@ -578,27 +613,57 @@
                     </div>
                 </div>
 
-                <!-- Konfigurasi Live Google Drive API v3 -->
+                <!-- Pengaturan Daftar Pilihan Rencana Aksi -->
+                <div class="bg-white rounded-3xl p-4 shadow-android border border-slate-100 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-display font-bold text-sm text-slate-800 flex items-center gap-2">
+                                <i data-lucide="target" class="w-4 h-4 text-brand-600"></i>
+                                Daftar Pilihan Rencana Aksi
+                            </h3>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Kelola opsi Rencana Aksi yang muncul di bagian atas form pencatatan.</p>
+                        </div>
+                        <button type="button" onclick="resetDefaultRencanaAksi()" class="text-[10px] font-semibold text-slate-500 hover:text-brand-600 underline shrink-0">
+                            Reset Default
+                        </button>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <input type="text" id="new-rencana-aksi-input" placeholder="Tambah Rencana Aksi baru..."
+                            class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <button type="button" onclick="addRencanaAksiOption()"
+                            class="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold flex items-center gap-1 shrink-0 transition">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span>Tambah</span>
+                        </button>
+                    </div>
+
+                    <div id="settings-rencana-aksi-list" class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                        <!-- Daftar item Rencana Aksi dirender via JS -->
+                    </div>
+                </div>
+
+                <!-- Konfigurasi Live Google Drive API v3 & Google Sheets -->
                 <div class="bg-white rounded-3xl p-4 shadow-android border border-slate-100 space-y-3">
                     <div class="flex items-start justify-between">
                         <div>
                             <h3 class="font-display font-bold text-sm text-slate-800 flex items-center gap-2">
                                 <i data-lucide="cloud" class="w-4 h-4 text-blue-600"></i>
-                                Integrasi Google Drive API v3
+                                Integrasi Google Drive & Google Sheets
                             </h3>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Hubungkan Google Cloud OAuth Client ID untuk upload langsung ke Drive pribadi Anda.</p>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Hubungkan Google Cloud OAuth Client ID untuk menyimpan database kinerja langsung ke Google Sheets & bukti ke Drive pribadi Anda.</p>
                         </div>
                     </div>
 
                     <div class="bg-blue-50/80 border border-blue-100 rounded-2xl p-3 text-[11px] text-blue-900 space-y-1">
                         <p class="font-semibold flex items-center gap-1">
-                            <i data-lucide="info" class="w-3.5 h-3.5 text-blue-600"></i> Cara Aktivasi Mode Live Drive:
+                            <i data-lucide="info" class="w-3.5 h-3.5 text-blue-600"></i> Cara Aktivasi Database Google Sheets:
                         </p>
                         <ol class="list-decimal pl-4 space-y-0.5 text-blue-800">
-                            <li>Buka Google Cloud Console & aktifkan <strong>Google Drive API</strong>.</li>
+                            <li>Buka Google Cloud Console & aktifkan <strong>Google Drive API</strong> serta <strong>Google Sheets API</strong>.</li>
                             <li>Buat kredensial <strong>OAuth 2.0 Client ID</strong> (Web Application).</li>
                             <li>Tambahkan origin URL aplikasi ini ke <em>Authorized JavaScript origins</em>.</li>
-                            <li>Tempel Client ID di bawah lalu klik <strong>Otorisasi Google Drive</strong>.</li>
+                            <li>Tempel Client ID di bawah lalu klik <strong>Otorisasi Google</strong>.</li>
                         </ol>
                     </div>
 
@@ -609,33 +674,29 @@
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
 
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">ID Google Spreadsheet Database (Opsional - Otomatis Dibuat Jika Kosong)</label>
+                        <input type="text" id="set-spreadsheet-id" 
+                            placeholder="Otomatis membuat file Database_SiKinerja_AI di folder Kinerja_Harian"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
                     <div class="grid grid-cols-2 gap-2 pt-1">
                         <button type="button" onclick="saveClientIdAndConnect()" 
                             class="py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition">
                             <i data-lucide="log-in" class="w-4 h-4"></i>
-                            Otorisasi Drive
+                            Otorisasi Google
                         </button>
                         <button type="button" onclick="disconnectGoogleDrive()" 
                             class="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
                             <i data-lucide="power-off" class="w-4 h-4"></i>
-                            Mode Simulasi
+                            Putuskan Koneksi
                         </button>
                     </div>
 
-                    <div id="oauth-status-box" class="text-[11px] p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600">
-                        Status saat ini: <strong>Mode Simulasi Lokal</strong> (Belum terhubung token OAuth aktif).
+                    <div id="oauth-status-box" class="text-[11px] p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700">
+                        Status saat ini: <strong>Belum Terhubung</strong> (Database Google Sheets wajib terhubung untuk mencatat kinerja).
                     </div>
-                </div>
-
-                <!-- Reset Data Demo -->
-                <div class="bg-white rounded-3xl p-4 shadow-android border border-slate-100 flex items-center justify-between">
-                    <div>
-                        <h4 class="text-xs font-bold text-slate-800">Bersihkan Cache Lokal</h4>
-                        <p class="text-[11px] text-slate-500">Hapus seluruh data riwayat demo di browser ini</p>
-                    </div>
-                    <button type="button" onclick="clearAllLocalData()" class="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold transition">
-                        Reset Data
-                    </button>
                 </div>
             </section>
 
@@ -703,10 +764,11 @@
     <!-- ===================================================================== -->
     <script>
         // -------------------------------------------------------------------
-        // 1. STATE & KONSTANTA APLIKASI
+        // 1. STATE & KONSTANTA APLIKASI (DATABASE TERPUSAT DI GOOGLE SHEETS)
         // -------------------------------------------------------------------
-        const STORAGE_KEY_LOGS = 'sikinerja_ai_logs_v1';
         const STORAGE_KEY_CONFIG = 'sikinerja_ai_config_v1';
+        const SPREADSHEET_FILE_NAME = 'Database_SiKinerja_AI';
+        const SHEET_TAB_NAME = 'Log_Kinerja';
 
         const NAMA_BULAN = [
             '01_Januari', '02_Februari', '03_Maret', '04_April',
@@ -714,13 +776,25 @@
             '09_September', '10_Oktober', '11_November', '12_Desember'
         ];
 
+        const DEFAULT_RENCANA_AKSI = [
+            'Melaksanakan penugasan kedinasan berdasarkan arahan pimpinan untuk mendukung pelaksanaan tugas organisasi',
+            'Menyusun laporan Rencana Tindak Pengendalian (RTP)',
+            'Mengumpulkan, mengolah, menganalisa data dan menyusun laporan program kesehatan masyarakat',
+            'Membuat laporan Perkembangan Pelaksanaan Kegiatan APBD (Simlaba)',
+            'Mengumpulkan, menganalisa dan mengupload data statistik sektoral ke Open Data',
+            'Mengumpulkan, menganalisa dan menyusun dokumen Penilaian SAKIP'
+        ];
+
         let appState = {
             profile: {
                 nama: 'Riwanto, SKM',
                 jabatan: 'Staf Renvalkeu Dinkes Kota Tegal'
             },
+            rencanaAksiList: [...DEFAULT_RENCANA_AKSI],
             drive: {
                 clientId: '',
+                spreadsheetId: '',
+                spreadsheetUrl: '',
                 accessToken: null,
                 tokenExpiry: 0,
                 isLive: false
@@ -767,68 +841,103 @@
 
         function loadPersistedState() {
             try {
+                // Bersihkan sisa cache database lokal lama jika pernah ada
+                localStorage.removeItem('sikinerja_ai_logs_v1');
+
                 const savedConfig = JSON.parse(localStorage.getItem(STORAGE_KEY_CONFIG));
                 if (savedConfig) {
                     if (savedConfig.profile) appState.profile = savedConfig.profile;
                     if (savedConfig.clientId) appState.drive.clientId = savedConfig.clientId;
+                    if (savedConfig.spreadsheetId) appState.drive.spreadsheetId = savedConfig.spreadsheetId;
+                    if (Array.isArray(savedConfig.rencanaAksiList) && savedConfig.rencanaAksiList.length > 0) {
+                        appState.rencanaAksiList = savedConfig.rencanaAksiList;
+                    }
                 }
 
                 document.getElementById('set-nama').value = appState.profile.nama;
                 document.getElementById('set-jabatan').value = appState.profile.jabatan;
-                document.getElementById('set-client-id').value = '556526035426-t2vnmgcdnhccmcmddggr6mgdhh1j4s0m.apps.googleusercontent.com';//appState.drive.clientId;
+                const defaultCid = '556526035426-t2vnmgcdnhccmcmddggr6mgdhh1j4s0m.apps.googleusercontent.com';
+                if (!appState.drive.clientId) appState.drive.clientId = defaultCid;
+                document.getElementById('set-client-id').value = appState.drive.clientId;
+                document.getElementById('set-spreadsheet-id').value = appState.drive.spreadsheetId || '';
                 updateHeaderProfileUI();
-
-                const savedLogs = JSON.parse(localStorage.getItem(STORAGE_KEY_LOGS));
-                if (Array.isArray(savedLogs) && savedLogs.length > 0) {
-                    appState.logs = savedLogs;
-                } else {
-                    // Seed 1 contoh data awal agar riwayat langsung informatif
-                    const todayStr = getTodayDateString();
-                    appState.logs = [{
-                        id: 'demo-init-1',
-                        tanggal: todayStr,
-                        jamMulai: '08:00',
-                        jamSelesai: '09:30',
-                        durasiMenit: 90,
-                        durasiText: '1 jam 30 menit',
-                        kategori: 'Rapat/Koordinasi',
-                        kegiatan: 'Apel pagi dan koordinasi pembagian tugas evaluasi triwulan IV',
-                        hasilJumlah: '1',
-                        hasilSatuan: 'Kegiatan',
-                        folderPath: buildFolderPathInfo(todayStr).fullPath,
-                        photoDataUrl: null,
-                        photoName: '20261112_0800-0930_apel_pagi.jpg',
-                        photoDriveUrl: null,
-                        docName: 'Notulensi_Rapat_Triwulan.pdf',
-                        docDriveUrl: null,
-                        syncMode: 'Simulasi',
-                        driveFolderUrl: null,
-                        createdAt: new Date().toISOString()
-                    }];
-                    saveLogsToLocal();
-                }
+                renderRencanaAksiOptions();
+                updateDriveConnectionUI(false);
             } catch (e) {
-                console.error('Gagal memuat state lokal:', e);
+                console.error('Gagal memuat konfigurasi:', e);
             }
         }
 
         function saveConfigToLocal() {
             localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify({
                 profile: appState.profile,
-                clientId: appState.drive.clientId
+                clientId: appState.drive.clientId,
+                spreadsheetId: appState.drive.spreadsheetId,
+                rencanaAksiList: appState.rencanaAksiList
             }));
         }
 
-        function saveLogsToLocal() {
-            try {
-                // Simpan maksimal 30 log terakhir beserta thumbnail terkompresi agar tidak melebihi kuota localStorage
-                localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(appState.logs.slice(0, 30)));
-            } catch (e) {
-                // Jika kuota penuh karena banyak foto base64, simpan tanpa foto base64 untuk item lama
-                const lightLogs = appState.logs.map((item, idx) => idx > 4 ? { ...item, photoDataUrl: null } : item);
-                localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(lightLogs));
+        function renderRencanaAksiOptions() {
+            const selectEl = document.getElementById('input-rencana-aksi');
+            const settingsListEl = document.getElementById('settings-rencana-aksi-list');
+            const previousVal = selectEl ? selectEl.value : '';
+
+            if (selectEl) {
+                const placeholderOpt = `<option value="" disabled ${!previousVal ? 'selected' : ''}>-- Pilih Rencana Aksi --</option>`;
+                const optionsHtml = appState.rencanaAksiList.map(item => {
+                    const selected = item === previousVal ? 'selected' : '';
+                    return `<option value="${escapeHtml(item)}" ${selected}>${escapeHtml(item)}</option>`;
+                }).join('');
+                selectEl.innerHTML = placeholderOpt + optionsHtml;
             }
-            updateNavBadge();
+
+            if (settingsListEl) {
+                settingsListEl.innerHTML = appState.rencanaAksiList.map((item, idx) => `
+                    <div class="flex items-start justify-between gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                        <span class="text-slate-700 leading-snug flex-1">${idx + 1}. ${escapeHtml(item)}</span>
+                        <button type="button" onclick="removeRencanaAksiOption(${idx})" class="text-slate-400 hover:text-rose-600 p-0.5 shrink-0" title="Hapus Rencana Aksi">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `).join('');
+                lucide.createIcons();
+            }
+        }
+
+        function addRencanaAksiOption() {
+            const inputEl = document.getElementById('new-rencana-aksi-input');
+            const val = inputEl.value.trim();
+            if (!val) {
+                showToast('Tuliskan uraian Rencana Aksi terlebih dahulu.', 'error');
+                return;
+            }
+            if (appState.rencanaAksiList.includes(val)) {
+                showToast('Rencana Aksi tersebut sudah ada dalam daftar.', 'info');
+                return;
+            }
+            appState.rencanaAksiList.push(val);
+            saveConfigToLocal();
+            renderRencanaAksiOptions();
+            inputEl.value = '';
+            showToast('Rencana Aksi baru berhasil ditambahkan!', 'success');
+        }
+
+        function removeRencanaAksiOption(index) {
+            if (appState.rencanaAksiList.length <= 1) {
+                showToast('Minimal harus tersisa 1 pilihan Rencana Aksi.', 'error');
+                return;
+            }
+            appState.rencanaAksiList.splice(index, 1);
+            saveConfigToLocal();
+            renderRencanaAksiOptions();
+            showToast('Opsi Rencana Aksi dihapus.', 'info');
+        }
+
+        function resetDefaultRencanaAksi() {
+            appState.rencanaAksiList = [...DEFAULT_RENCANA_AKSI];
+            saveConfigToLocal();
+            renderRencanaAksiOptions();
+            showToast('Daftar Rencana Aksi dikembalikan ke bawaan.', 'success');
         }
 
         function updateHeaderProfileUI() {
@@ -851,28 +960,126 @@
         }
 
         // -------------------------------------------------------------------
-        // 3. NAVIGASI TAB ANDROID BOTTOM BAR
+        // 8. INTEGRASI NYATA GOOGLE IDENTITY SERVICES (GIS), DRIVE & SHEETS API
         // -------------------------------------------------------------------
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+        function isGoogleConnected() {
+            return Boolean(appState.drive.isLive && appState.drive.accessToken && Date.now() < appState.drive.tokenExpiry);
+        }
 
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('text-brand-600');
-                btn.classList.add('text-slate-500');
-                btn.querySelector('.nav-pill').classList.remove('bg-brand-100');
-                btn.querySelector('.nav-pill').classList.add('bg-transparent');
-            });
-
-            const activeBtn = document.getElementById(`nav-${tabName}`);
-            activeBtn.classList.remove('text-slate-500');
-            activeBtn.classList.add('text-brand-600');
-            activeBtn.querySelector('.nav-pill').classList.remove('bg-transparent');
-            activeBtn.querySelector('.nav-pill').classList.add('bg-brand-100');
-
-            if (tabName === 'riwayat') {
-                renderHistoryList();
+        function handleQuickDriveAction() {
+            if (isGoogleConnected()) {
+                showToast('Sudah terhubung dengan Google Drive & Google Sheets!', 'success');
+            } else if (appState.drive.clientId) {
+                authorizeGoogleDrive();
+            } else {
+                switchTab('pengaturan');
+                showToast('Masukkan Google OAuth Client ID Anda untuk menghubungkan Google Sheets.', 'error');
             }
+        }
+
+        function saveClientIdAndConnect() {
+            const clientId = document.getElementById('set-client-id').value.trim();
+            const customSheetId = document.getElementById('set-spreadsheet-id').value.trim();
+            if (!clientId) {
+                showToast('Harap isi Google OAuth Client ID terlebih dahulu.', 'error');
+                return;
+            }
+            appState.drive.clientId = clientId;
+            if (customSheetId) {
+                appState.drive.spreadsheetId = customSheetId;
+            }
+            saveConfigToLocal();
+            authorizeGoogleDrive();
+        }
+
+        function authorizeGoogleDrive() {
+            if (!window.google || !google.accounts || !google.accounts.oauth2) {
+                showToast('Library Google Identity Services sedang dimuat, coba sesaat lagi.', 'error');
+                return;
+            }
+
+            try {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: appState.drive.clientId,
+                    scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets',
+                    callback: async (tokenResponse) => {
+                        if (tokenResponse && tokenResponse.access_token) {
+                            appState.drive.accessToken = tokenResponse.access_token;
+                            appState.drive.tokenExpiry = Date.now() + (tokenResponse.expires_in * 1000);
+                            appState.drive.isLive = true;
+                            updateDriveConnectionUI(true);
+                            showToast('Berhasil terhubung ke Google Drive & Google Sheets!', 'success');
+
+                            // Pastikan file Google Spreadsheet tersedia & muat data dari Google Sheets
+                            await fetchLogsFromGoogleSheet(true);
+                        }
+                    },
+                });
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            } catch (err) {
+                console.error(err);
+                showToast('Gagal menginisialisasi OAuth Client ID. Periksa kembali ID Anda.', 'error');
+            }
+        }
+
+        function disconnectGoogleDrive() {
+            if (appState.drive.accessToken && window.google) {
+                google.accounts.oauth2.revoke(appState.drive.accessToken, () => {});
+            }
+            appState.drive.accessToken = null;
+            appState.drive.isLive = false;
+            appState.logs = [];
+            updateDriveConnectionUI(false);
+            renderHistoryList();
+            showToast('Koneksi Google Drive & Sheets diputus.', 'info');
+        }
+
+        function updateDriveConnectionUI(isLive) {
+            const dot = document.getElementById('drive-indicator-dot');
+            const icon = document.getElementById('drive-header-icon');
+            const badge = document.getElementById('drive-mode-badge');
+            const sub = document.getElementById('drive-account-sub');
+            const btn = document.getElementById('header-connect-btn');
+            const statusBox = document.getElementById('oauth-status-box');
+            const warningBanner = document.getElementById('connection-warning-banner');
+            const sheetLink = document.getElementById('open-sheet-link');
+            const sheetInfoLabel = document.getElementById('sheet-db-info-label');
+
+            if (isLive) {
+                dot.classList.remove('bg-amber-400', 'bg-rose-500');
+                dot.classList.add('bg-emerald-400');
+                icon.classList.remove('text-amber-300', 'text-rose-400');
+                icon.classList.add('text-emerald-300');
+                badge.textContent = 'Google Sheets & Drive Terhubung';
+                sub.textContent = 'Database aktif di Google Sheets • Bukti di Drive';
+                btn.textContent = 'Aktif';
+                btn.classList.add('bg-emerald-500', 'text-white');
+                btn.classList.remove('bg-white', 'text-brand-700');
+                statusBox.className = 'text-[11px] p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800';
+                statusBox.innerHTML = 'Status saat ini: <strong>TERHUBUNG (Google Sheets & Drive API v3)</strong>';
+                if (warningBanner) warningBanner.classList.add('hidden');
+                if (sheetInfoLabel) sheetInfoLabel.textContent = `Database: ${SPREADSHEET_FILE_NAME} (${SHEET_TAB_NAME})`;
+                if (sheetLink && appState.drive.spreadsheetUrl) {
+                    sheetLink.href = appState.drive.spreadsheetUrl;
+                    sheetLink.classList.remove('hidden');
+                }
+            } else {
+                dot.classList.remove('bg-emerald-400', 'bg-amber-400');
+                dot.classList.add('bg-rose-500');
+                icon.classList.remove('text-emerald-300', 'text-amber-300');
+                icon.classList.add('text-rose-400');
+                badge.textContent = 'Belum Terhubung ke Google';
+                sub.textContent = 'Wajib hubungkan Drive & Google Sheets sebelum input';
+                btn.textContent = 'Hubungkan';
+                btn.classList.remove('bg-emerald-500', 'text-white');
+                btn.classList.add('bg-white', 'text-brand-700');
+                statusBox.className = 'text-[11px] p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700';
+                statusBox.innerHTML = 'Status saat ini: <strong>Belum Terhubung</strong> (Database Google Sheets wajib terhubung untuk mencatat kinerja).';
+                if (warningBanner) warningBanner.classList.remove('hidden');
+                if (sheetInfoLabel) sheetInfoLabel.textContent = 'Database: Belum terhubung ke Google Sheets';
+                if (sheetLink) sheetLink.classList.add('hidden');
+            }
+            updateNavBadge();
         }
 
         function updateNavBadge() {
@@ -886,8 +1093,223 @@
         }
 
         // -------------------------------------------------------------------
+        // 3. NAVIGASI TAB, WAKTU, DURASI & STRUKTUR FOLDER
+        // -------------------------------------------------------------------
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const targetTab = document.getElementById(`tab-${tabName}`);
+            if (targetTab) targetTab.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-brand-600');
+                btn.classList.add('text-slate-500');
+                const pill = btn.querySelector('.nav-pill');
+                if (pill) {
+                    pill.classList.remove('bg-brand-100');
+                    pill.classList.add('bg-transparent');
+                }
+            });
+
+            const activeBtn = document.getElementById(`nav-${tabName}`);
+            if (activeBtn) {
+                activeBtn.classList.add('text-brand-600');
+                activeBtn.classList.remove('text-slate-500');
+                const activePill = activeBtn.querySelector('.nav-pill');
+                if (activePill) {
+                    activePill.classList.add('bg-brand-100');
+                    activePill.classList.remove('bg-transparent');
+                }
+            }
+
+            if (tabName === 'riwayat') {
+                renderHistoryList();
+            }
+        }
+
+        function getTodayDateString() {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function addMinutesToTime(timeStr, minsToAdd) {
+            if (!timeStr || !timeStr.includes(':')) return '09:00';
+            const [h, m] = timeStr.split(':').map(Number);
+            let total = h * 60 + m + minsToAdd;
+            if (total >= 24 * 60) total = 23 * 60 + 59;
+            if (total < 0) total = 0;
+            const newH = String(Math.floor(total / 60)).padStart(2, '0');
+            const newM = String(total % 60).padStart(2, '0');
+            return `${newH}:${newM}`;
+        }
+
+        function calculateDurationInfo(startStr, endStr) {
+            if (!startStr || !endStr) return { isValid: false, minutes: 0, text: '0 jam 0 menit' };
+            const [sh, sm] = startStr.split(':').map(Number);
+            const [eh, em] = endStr.split(':').map(Number);
+            const startMins = sh * 60 + sm;
+            const endMins = eh * 60 + em;
+            const diff = endMins - startMins;
+            if (diff <= 0) {
+                return { isValid: false, minutes: 0, text: 'Jam selesai harus lebih akhir' };
+            }
+            const hours = Math.floor(diff / 60);
+            const mins = diff % 60;
+            return {
+                isValid: true,
+                minutes: diff,
+                text: `${hours} jam ${mins} menit`
+            };
+        }
+
+        function handleTimeRangeChange() {
+            const startEl = document.getElementById('input-jam-mulai');
+            const endEl = document.getElementById('input-jam-selesai');
+            const badgeEl = document.getElementById('duration-display-badge');
+            if (!startEl || !endEl || !badgeEl) return;
+
+            const info = calculateDurationInfo(startEl.value, endEl.value);
+            badgeEl.textContent = info.text;
+            if (info.isValid) {
+                badgeEl.classList.remove('text-rose-600');
+                badgeEl.classList.add('text-brand-700');
+            } else {
+                badgeEl.classList.remove('text-brand-700');
+                badgeEl.classList.add('text-rose-600');
+            }
+            refreshWatermarkIfPhotoExists();
+        }
+
+        function resetCurrentTime() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const startStr = `${hh}:${mm}`;
+            const endStr = addMinutesToTime(startStr, 60);
+
+            const dateEl = document.getElementById('input-tanggal');
+            const startEl = document.getElementById('input-jam-mulai');
+            const endEl = document.getElementById('input-jam-selesai');
+
+            if (dateEl) dateEl.value = getTodayDateString();
+            if (startEl) startEl.value = startStr;
+            if (endEl) endEl.value = endStr;
+
+            handleTimeRangeChange();
+            updateFolderPreview();
+        }
+
+        function buildFolderPathInfo(dateStr) {
+            const validDate = dateStr || getTodayDateString();
+            const parts = validDate.split('-');
+            const year = parts[0] || String(new Date().getFullYear());
+            const monthIdx = Math.max(0, Math.min(11, parseInt(parts[1] || '1', 10) - 1));
+            const month = NAMA_BULAN[monthIdx];
+            const root = 'Kinerja_Harian';
+            return {
+                root,
+                year,
+                month,
+                date: validDate,
+                fullPath: `/${root}/${year}/${month}/${validDate}/`
+            };
+        }
+
+        function updateFolderPreview() {
+            const dateVal = document.getElementById('input-tanggal')?.value || getTodayDateString();
+            const info = buildFolderPathInfo(dateVal);
+            const yEl = document.getElementById('tree-year');
+            const mEl = document.getElementById('tree-month');
+            const dEl = document.getElementById('tree-date');
+            if (yEl) yEl.textContent = info.year;
+            if (mEl) mEl.textContent = info.month;
+            if (dEl) dEl.textContent = `${info.date}/`;
+        }
+
+        // -------------------------------------------------------------------
         // 4. ASISTEN AI CERDAS (NLP BAHASA INDONESIA + WEB SPEECH API)
         // -------------------------------------------------------------------
+        function parseWithAI() {
+            const promptEl = document.getElementById('ai-prompt-input');
+            const rawText = promptEl.value.trim();
+            if (!rawText) {
+                showToast('Ketik atau ucapkan kegiatan terlebih dahulu.', 'error');
+                return;
+            }
+
+            const lower = rawText.toLowerCase();
+
+            // 1. Deteksi Tanggal (hari ini / kemarin)
+            const targetDate = new Date();
+            if (lower.includes('kemarin')) {
+                targetDate.setDate(targetDate.getDate() - 1);
+            }
+            const yyyy = targetDate.getFullYear();
+            const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(targetDate.getDate()).padStart(2, '0');
+            document.getElementById('input-tanggal').value = `${yyyy}-${mm}-${dd}`;
+            updateFolderPreview();
+
+            // 2. Deteksi Rentang Jam atau Jam Tunggal
+            const rangeRegex = /(?:pukul|jam)?\s*(\d{1,2})[:.](\d{2})\s*(?:sampai|s\.?d\.?|-|hingga)\s*(?:pukul|jam)?\s*(\d{1,2})[:.](\d{2})/i;
+            const singleRegex = /(?:pukul|jam)\s*(\d{1,2})(?:[:.](\d{2}))?\s*(pagi|siang|sore|malam)?/i;
+
+            const rangeMatch = rawText.match(rangeRegex);
+            if (rangeMatch) {
+                const startT = `${String(rangeMatch[1]).padStart(2, '0')}:${rangeMatch[2]}`;
+                const endT = `${String(rangeMatch[3]).padStart(2, '0')}:${rangeMatch[4]}`;
+                document.getElementById('input-jam-mulai').value = startT;
+                document.getElementById('input-jam-selesai').value = endT;
+            } else {
+                const singleMatch = rawText.match(singleRegex);
+                if (singleMatch) {
+                    let h = parseInt(singleMatch[1], 10);
+                    const m = singleMatch[2] ? parseInt(singleMatch[2], 10) : 0;
+                    const period = (singleMatch[3] || '').toLowerCase();
+                    if ((period === 'siang' && h < 12 && h >= 1) || (period === 'sore' && h < 12) || (period === 'malam' && h < 12)) {
+                        h += 12;
+                    }
+                    const startT = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                    const endT = addMinutesToTime(startT, 60);
+                    document.getElementById('input-jam-mulai').value = startT;
+                    document.getElementById('input-jam-selesai').value = endT;
+                }
+            }
+            handleTimeRangeChange();
+
+            // 3. Deteksi Kategori Otomatis
+            let detectedCat = 'Rapat/Koordinasi';
+            if (lower.includes('apel')) detectedCat = 'Apel';
+            else if (lower.includes('monev') || lower.includes('monitoring') || lower.includes('lapangan')) detectedCat = 'Monev';
+            else if (lower.includes('laporan') || lower.includes('administrasi') || lower.includes('surat') || lower.includes('dokumen') || lower.includes('sakip') || lower.includes('simlaba') || lower.includes('rtp')) detectedCat = 'Administrasi/Laporan';
+            else if (lower.includes('simpus') || lower.includes('sistem') || lower.includes('aplikasi') || lower.includes('database') || lower.includes('it')) detectedCat = 'Pengembangan Sistem/IT';
+            else if (lower.includes('olah data') || lower.includes('data kesmas') || lower.includes('statistik') || lower.includes('open data')) detectedCat = 'Mengolah Data Kesmas';
+
+            const radioEl = document.querySelector(`input[name="kategori"][value="${detectedCat}"]`);
+            if (radioEl) radioEl.checked = true;
+
+            // 4. Deteksi Jumlah & Satuan Hasil Kinerja
+            const outputMatch = rawText.match(/(\d+)\s*(dokumen|kegiatan|laporan|berkas|notulensi|surat|paket)/i);
+            if (outputMatch) {
+                document.getElementById('input-hasil-jumlah').value = outputMatch[1];
+                const satuanCap = outputMatch[2].charAt(0).toUpperCase() + outputMatch[2].slice(1).toLowerCase();
+                document.getElementById('input-hasil-satuan').value = satuanCap;
+            }
+
+            // 5. Isi Uraian Kegiatan
+            const cleanedDesc = rawText.charAt(0).toUpperCase() + rawText.slice(1);
+            document.getElementById('input-kegiatan').value = cleanedDesc;
+            refreshWatermarkIfPhotoExists();
+
+            const feedbackBox = document.getElementById('ai-status-feedback');
+            const feedbackText = document.getElementById('ai-status-text');
+            feedbackText.textContent = `AI mengisi kategori "${detectedCat}", jam, & uraian. Pilih Rencana Aksi di bawah.`;
+            feedbackBox.classList.remove('hidden');
+            showToast('Asisten AI berhasil mengekstrak kegiatan!', 'success');
+        }
+
         function fillExamplePrompt() {
             const examples = [
                 "Rapat koordinasi evaluasi program pukul 08.00 sampai 10.30",
@@ -963,251 +1385,239 @@
         }
 
         /**
-         * Mengekstrak Tanggal, Jam Mulai, Jam Selesai, Kategori, dan Nama Kegiatan dari kalimat bebas bahasa Indonesia
+         * Memastikan file Google Spreadsheet 'Database_SiKinerja_AI' ada di folder 'Kinerja_Harian'.
+         * Jika belum ada, otomatis membuat Spreadsheet baru beserta header kolomnya.
          */
-        function parseWithAI() {
-            const rawText = document.getElementById('ai-prompt-input').value.trim();
-            if (!rawText) {
-                showToast('Ketik atau ucapkan aktivitas terlebih dahulu.', 'error');
-                return;
-            }
+        async function ensureDatabaseSpreadsheet() {
+            const token = appState.drive.accessToken;
+            const rootFolder = await findOrCreateDriveFolder('Kinerja_Harian', 'root');
 
-            const lower = rawText.toLowerCase();
-            const now = new Date();
-            let targetDate = new Date(now);
-
-            // 1. Ekstraksi Tanggal Relatif atau Spesifik (DD/MM/YYYY atau DD-MM-YYYY)
-            const explicitDateMatch = lower.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-            if (explicitDateMatch) {
-                const d = parseInt(explicitDateMatch[1], 10);
-                const m = parseInt(explicitDateMatch[2], 10) - 1;
-                const y = parseInt(explicitDateMatch[3], 10);
-                targetDate = new Date(y, m, d);
-            } else if (lower.includes('kemarin lusa')) {
-                targetDate.setDate(now.getDate() - 2);
-            } else if (lower.includes('kemarin')) {
-                targetDate.setDate(now.getDate() - 1);
-            } else if (lower.includes('besok')) {
-                targetDate.setDate(now.getDate() + 1);
-            }
-
-            const yyyy = targetDate.getFullYear();
-            const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
-            const dd = String(targetDate.getDate()).padStart(2, '0');
-            const formattedDate = `${yyyy}-${mm}-${dd}`;
-
-            // 2. Ekstraksi Rentang Jam (Jam Mulai & Jam Selesai)
-            let startTimeStr = null;
-            let endTimeStr = null;
-
-            const normalizeHour = (hStr, mStr, period) => {
-                let hour = parseInt(hStr, 10);
-                let minute = mStr ? parseInt(mStr, 10) : 0;
-                if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-                if (period === 'siang' && hour >= 1 && hour <= 5) hour += 12;
-                if (period === 'sore' && hour >= 1 && hour <= 7) hour += 12;
-                if (period === 'malam' && hour >= 1 && hour <= 11) hour += 12;
-                if (period === 'pagi' && hour === 12) hour = 0;
-                return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-            };
-
-            // Pola A: Rentang dua waktu ("pukul 08.00 sampai 10.30", "jam 09:00 - 11:00", "08.30 s.d. 10.00")
-            const rangeRegex = /(?:jam|pukul)?\s*(\d{1,2})(?:[:.](\d{2}))?\s*(pagi|siang|sore|malam)?\s*(?:-|–|—|sampai(?:\s+dengan)?|hingga|s\.?d\.?)\s*(?:jam|pukul)?\s*(\d{1,2})(?:[:.](\d{2}))?\s*(pagi|siang|sore|malam)?/i;
-            const rangeMatch = lower.match(rangeRegex);
-
-            if (rangeMatch) {
-                const startPeriod = rangeMatch[3] || rangeMatch[6];
-                const endPeriod = rangeMatch[6] || rangeMatch[3];
-                startTimeStr = normalizeHour(rangeMatch[1], rangeMatch[2], startPeriod);
-                endTimeStr = normalizeHour(rangeMatch[4], rangeMatch[5], endPeriod);
-            } else {
-                // Pola B: Satu waktu saja -> otomatis set Jam Selesai +1 jam
-                const singleRegex = /(?:jam|pukul)?\s*(\d{1,2})(?:[:.](\d{2}))?\s*(pagi|siang|sore|malam)?/gi;
-                let match;
-                while ((match = singleRegex.exec(lower)) !== null) {
-                    const fullMatch = match[0].trim();
-                    const hasPrefix = fullMatch.startsWith('jam') || fullMatch.startsWith('pukul');
-                    const hasMinute = Boolean(match[2]);
-                    const hasPeriod = Boolean(match[3]);
-
-                    if (hasPrefix || hasMinute || hasPeriod) {
-                        startTimeStr = normalizeHour(match[1], match[2], match[3]);
-                        if (startTimeStr) {
-                            endTimeStr = addMinutesToTime(startTimeStr, 60);
-                            break;
-                        }
+            // 1. Jika spreadsheetId sudah tersimpan, verifikasi keberadaannya
+            if (appState.drive.spreadsheetId) {
+                const checkRes = await fetch(`https://www.googleapis.com/drive/v3/files/${appState.drive.spreadsheetId}?fields=id,name,webViewLink,trashed`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (checkRes.ok) {
+                    const fileInfo = await checkRes.json();
+                    if (!fileInfo.trashed) {
+                        appState.drive.spreadsheetUrl = fileInfo.webViewLink || `https://docs.google.com/spreadsheets/d/${fileInfo.id}/edit`;
+                        updateDriveConnectionUI(true);
+                        return fileInfo.id;
                     }
                 }
             }
 
-            // 3. Klasifikasi Kategori Otomatis
-            let detectedCategory = 'Rapat/Koordinasi';
-            if (/(pelayanan|lapangan|kunjungan|survei|masyarakat|loket|warga|inspeksi)/.test(lower)) {
-                detectedCategory = 'Pelayanan/Lapangan';
-            } else if (/(administrasi|dokumen|laporan|surat|notulensi|menyusun|penyusunan|draft|proposal|rekap|input)/.test(lower)) {
-                detectedCategory = 'Administrasi/Laporan';
-            } else if (/(sistem|aplikasi|server|website|coding|database|jaringan|it|software|program)/.test(lower) && !/evaluasi program/.test(lower)) {
-                detectedCategory = 'Pengembangan Sistem/IT';
-            } else if (/(evaluasi|monev|monitoring|evaluasi)/.test(lower)) {
-                detectedCategory = 'Monev';
-			} else if (/(apel|upacara|gladi)/.test(lower)) {
-                detectedCategory = 'Apel';
-            } else if (/(data|mengolah|entri)/.test(lower)) {
-                detectedCategory = 'Mengolah Data';
-			} else if (/(rapat|koordinasi|briefing|zoom|meeting|diskusi|audiensi)/.test(lower)) {
-                detectedCategory = 'Rapat/Koordinasi';
-			} else {
-                detectedCategory = 'Lainnya';
+            // 2. Cari file spreadsheet berdasarkan nama di dalam folder Kinerja_Harian
+            const query = `name='${SPREADSHEET_FILE_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and '${rootFolder.id}' in parents and trashed=false`;
+            const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,webViewLink)`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const searchData = await searchRes.json();
+
+            if (searchData.files && searchData.files.length > 0) {
+                const existingSheet = searchData.files[0];
+                appState.drive.spreadsheetId = existingSheet.id;
+                appState.drive.spreadsheetUrl = existingSheet.webViewLink || `https://docs.google.com/spreadsheets/d/${existingSheet.id}/edit`;
+                document.getElementById('set-spreadsheet-id').value = existingSheet.id;
+                saveConfigToLocal();
+                updateDriveConnectionUI(true);
+                return existingSheet.id;
             }
 
-            // 4. Bersihkan Nama Kegiatan dari keterangan tanggal & rentang waktu agar rapi
-            let cleanActivity = rawText
-                .replace(/(?:pada\s+)?(?:tanggal\s+)?\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/gi, '')
-                .replace(/(?:pada\s+)?(?:hari\s+)?(?:kemarin\s+lusa|kemarin|hari\s+ini|tadi)/gi, '')
-                .replace(/(?:pada\s+)?(?:jam|pukul)?\s*\d{1,2}(?:[:.]\d{2})?\s*(?:pagi|siang|sore|malam|wib|wita|wit)?\s*(?:-|–|—|sampai(?:\s+dengan)?|hingga|s\.?d\.?)\s*(?:jam|pukul)?\s*\d{1,2}(?:[:.]\d{2})?\s*(?:pagi|siang|sore|malam|wib|wita|wit)?/gi, '')
-                .replace(/(?:pada\s+)?(?:jam|pukul)\s*\d{1,2}(?:[:.]\d{2})?\s*(?:pagi|siang|sore|malam|wib|wita|wit)?/gi, '')
-                .replace(/\s+/g, ' ')
-                .trim();
+            // 3. Buat file Google Spreadsheet baru via Drive API di dalam folder Kinerja_Harian
+            const createRes = await fetch('https://www.googleapis.com/drive/v3/files?fields=id,name,webViewLink', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: SPREADSHEET_FILE_NAME,
+                    mimeType: 'application/vnd.google-apps.spreadsheet',
+                    parents: [rootFolder.id]
+                })
+            });
 
-            if (cleanActivity.length > 0) {
-                cleanActivity = cleanActivity.charAt(0).toUpperCase() + cleanActivity.slice(1);
-            } else {
-                cleanActivity = rawText;
+            if (!createRes.ok) {
+                throw new Error('Gagal membuat file Google Spreadsheet database.');
             }
 
-            // 5. Deteksi Otomatis Hasil Kinerja (Jumlah & Satuan, misal: "2 dokumen", "1 kegiatan")
-            const outputMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*(dokumen|kegiatan|laporan|berkas|notulensi|surat|paket|kali)\b/i);
-            if (outputMatch) {
-                document.getElementById('input-hasil-jumlah').value = outputMatch[1].replace(',', '.');
-                const unitRaw = outputMatch[2];
-                document.getElementById('input-hasil-satuan').value = unitRaw.charAt(0).toUpperCase() + unitRaw.slice(1).toLowerCase();
-            } else {
-                document.getElementById('input-hasil-jumlah').value = '1';
-                document.getElementById('input-hasil-satuan').value = detectedCategory === 'Administrasi/Laporan' ? 'Dokumen' : 'Kegiatan';
+            const newFile = await createRes.json();
+            const sheetId = newFile.id;
+            appState.drive.spreadsheetId = sheetId;
+            appState.drive.spreadsheetUrl = newFile.webViewLink || `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
+            document.getElementById('set-spreadsheet-id').value = sheetId;
+            saveConfigToLocal();
+
+            // Ubah nama sheet pertama menjadi 'Log_Kinerja'
+            await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    requests: [{
+                        updateSheetProperties: {
+                            properties: { sheetId: 0, title: SHEET_TAB_NAME },
+                            fields: 'title'
+                        }
+                    }]
+                })
+            });
+
+            // Tulis baris header tabel di Google Sheets
+            const headers = [[
+                'ID',
+                'Tanggal',
+                'Jam Mulai',
+                'Jam Selesai',
+                'Durasi Menit',
+                'Durasi Teks',
+                'Rencana Aksi',
+                'Kategori',
+                'Uraian Kegiatan',
+                'Jumlah Hasil',
+                'Satuan Hasil',
+                'Nama Bukti Foto',
+                'Link Google Drive Foto',
+                'Nama Bukti Dokumen',
+                'Link Google Drive Dokumen',
+                'Folder Tujuan Drive',
+                'Link Folder Drive',
+                'Pegawai',
+                'Waktu Input'
+            ]];
+
+            await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(SHEET_TAB_NAME + '!A1:S1')}?valueInputOption=USER_ENTERED`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ values: headers })
+            });
+
+            updateDriveConnectionUI(true);
+            return sheetId;
+        }
+
+        /**
+         * Menambahkan 1 baris log kinerja baru ke Google Sheets
+         */
+        async function appendLogToGoogleSheet(entry) {
+            const token = appState.drive.accessToken;
+            const sheetId = await ensureDatabaseSpreadsheet();
+
+            const rowValues = [[
+                entry.id,
+                entry.tanggal,
+                entry.jamMulai,
+                entry.jamSelesai,
+                entry.durasiMenit,
+                entry.durasiText,
+                entry.rencanaAksi || '-',
+                entry.kategori,
+                entry.kegiatan,
+                entry.hasilJumlah,
+                entry.hasilSatuan,
+                entry.photoName || '-',
+                entry.photoDriveUrl || '-',
+                entry.docName || '-',
+                entry.docDriveUrl || '-',
+                entry.folderPath,
+                entry.driveFolderUrl || '-',
+                `${appState.profile.nama} (${appState.profile.jabatan})`,
+                entry.createdAt
+            ]];
+
+            const appendRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(SHEET_TAB_NAME + '!A:S')}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ values: rowValues })
+            });
+
+            if (!appendRes.ok) {
+                const errJson = await appendRes.json().catch(() => ({}));
+                throw new Error(errJson.error?.message || 'Gagal menyimpan baris data ke Google Sheets.');
+            }
+        }
+
+        /**
+         * Membaca seluruh riwayat kinerja dari Google Sheets ke memori tampilan aplikasi
+         */
+        async function fetchLogsFromGoogleSheet(isSilent = false) {
+            if (!isGoogleConnected()) {
+                if (!isSilent) {
+                    showToast('Hubungkan akun Google terlebih dahulu untuk memuat data dari Google Sheets.', 'error');
+                }
+                return;
             }
 
-            // Terapkan ke Form
-            document.getElementById('input-tanggal').value = formattedDate;
-            if (startTimeStr) {
-                document.getElementById('input-jam-mulai').value = startTimeStr;
+            try {
+                const token = appState.drive.accessToken;
+                const sheetId = await ensureDatabaseSpreadsheet();
+
+                const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(SHEET_TAB_NAME + '!A2:S')}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) {
+                    throw new Error('Gagal membaca data dari Google Sheets.');
+                }
+
+                const data = await res.json();
+                const rows = data.values || [];
+
+                appState.logs = rows.map((r, idx) => {
+                    const startT = r[2] || '08:00';
+                    const endT = r[3] || addMinutesToTime(startT, 60);
+                    const durMin = parseInt(r[4], 10) || calculateDurationInfo(startT, endT).minutes;
+                    const durTxt = r[5] || calculateDurationInfo(startT, endT).text;
+                    return {
+                        id: r[0] || `sheet-row-${idx + 2}`,
+                        sheetRowIndex: idx + 2,
+                        tanggal: r[1] || getTodayDateString(),
+                        jamMulai: startT,
+                        jamSelesai: endT,
+                        durasiMenit: durMin,
+                        durasiText: durTxt,
+                        rencanaAksi: r[6] && r[6] !== '-' ? r[6] : '',
+                        kategori: r[7] || 'Rapat/Koordinasi',
+                        kegiatan: r[8] || '',
+                        hasilJumlah: r[9] || '1',
+                        hasilSatuan: r[10] || 'Kegiatan',
+                        photoName: r[11] && r[11] !== '-' ? r[11] : null,
+                        photoDriveUrl: r[12] && r[12] !== '-' ? r[12] : null,
+                        docName: r[13] && r[13] !== '-' ? r[13] : null,
+                        docDriveUrl: r[14] && r[14] !== '-' ? r[14] : null,
+                        folderPath: r[15] || buildFolderPathInfo(r[1]).fullPath,
+                        driveFolderUrl: r[16] && r[16] !== '-' ? r[16] : null,
+                        syncMode: 'Google Sheets & Drive',
+                        createdAt: r[18] || ''
+                    };
+                }).reverse();
+
+                renderHistoryList();
+                if (!isSilent) {
+                    showToast(`Berhasil memuat ${appState.logs.length} data dari Google Sheets!`, 'success');
+                }
+            } catch (err) {
+                console.error(err);
+                if (!isSilent) {
+                    showToast(`Gagal memuat Google Sheets: ${err.message}`, 'error');
+                }
             }
-            if (endTimeStr) {
-                document.getElementById('input-jam-selesai').value = endTimeStr;
-            }
-            document.getElementById('input-kegiatan').value = cleanActivity;
-
-            const radioEl = document.querySelector(`input[name="kategori"][value="${detectedCategory}"]`);
-            if (radioEl) radioEl.checked = true;
-
-            updateFolderPreview();
-            handleTimeRangeChange();
-
-            // Tampilkan feedback visual
-            const feedbackEl = document.getElementById('ai-status-feedback');
-            const feedbackText = document.getElementById('ai-status-text');
-            const timeLabel = startTimeStr && endTimeStr ? ` • ${startTimeStr} - ${endTimeStr}` : '';
-            feedbackText.textContent = `Terisi: ${formattedDate}${timeLabel} (${detectedCategory})`;
-            feedbackEl.classList.remove('hidden');
-            showToast('AI berhasil mengekstrak jadwal & rentang waktu!', 'success');
         }
 
         // -------------------------------------------------------------------
-        // 5. PENGELOLAAN TANGGAL, DURASI WAKTU & STRUKTUR FOLDER DRIVE
-        // -------------------------------------------------------------------
-        function getTodayDateString() {
-            const now = new Date();
-            const yyyy = now.getFullYear();
-            const mm = String(now.getMonth() + 1).padStart(2, '0');
-            const dd = String(now.getDate()).padStart(2, '0');
-            return `${yyyy}-${mm}-${dd}`;
-        }
-
-        function addMinutesToTime(timeStr, minsToAdd) {
-            const [h, m] = timeStr.split(':').map(Number);
-            const total = (h * 60 + m + minsToAdd + 1440) % 1440;
-            const nh = String(Math.floor(total / 60)).padStart(2, '0');
-            const nm = String(total % 60).padStart(2, '0');
-            return `${nh}:${nm}`;
-        }
-
-        function calculateDurationInfo(startStr, endStr) {
-            if (!startStr || !endStr) return { minutes: 0, text: '0 menit', isValid: false };
-            const [sh, sm] = startStr.split(':').map(Number);
-            const [eh, em] = endStr.split(':').map(Number);
-            const startTotal = sh * 60 + sm;
-            const endTotal = eh * 60 + em;
-            const diff = endTotal - startTotal;
-
-            if (diff <= 0) {
-                return { minutes: diff, text: 'Jam selesai harus > jam mulai', isValid: false };
-            }
-            const hours = Math.floor(diff / 60);
-            const mins = diff % 60;
-            const parts = [];
-            if (hours > 0) parts.push(`${hours} jam`);
-            if (mins > 0) parts.push(`${mins} menit`);
-            return { minutes: diff, text: parts.join(' '), isValid: true };
-        }
-
-        function handleTimeRangeChange() {
-            const startVal = document.getElementById('input-jam-mulai').value;
-            const endVal = document.getElementById('input-jam-selesai').value;
-            const info = calculateDurationInfo(startVal, endVal);
-            const badge = document.getElementById('duration-display-badge');
-
-            badge.textContent = info.text;
-            if (info.isValid) {
-                badge.classList.remove('text-rose-600');
-                badge.classList.add('text-brand-700');
-            } else {
-                badge.classList.remove('text-brand-700');
-                badge.classList.add('text-rose-600');
-            }
-            refreshWatermarkIfPhotoExists();
-        }
-
-        function resetCurrentTime() {
-            const now = new Date();
-            document.getElementById('input-tanggal').value = getTodayDateString();
-            const hh = String(now.getHours()).padStart(2, '0');
-            const min = String(now.getMinutes()).padStart(2, '0');
-            const startStr = `${hh}:${min}`;
-            const endStr = addMinutesToTime(startStr, 60);
-
-            document.getElementById('input-jam-mulai').value = startStr;
-            document.getElementById('input-jam-selesai').value = endStr;
-            updateFolderPreview();
-            handleTimeRangeChange();
-        }
-
-        function buildFolderPathInfo(dateStr) {
-            const safeDate = dateStr || getTodayDateString();
-            const parts = safeDate.split('-');
-            const year = parts[0] || '2026';
-            const monthIdx = Math.max(0, Math.min(11, parseInt(parts[1] || '11', 10) - 1));
-            const monthFolder = NAMA_BULAN[monthIdx];
-            return {
-                root: 'Kinerja_Harian',
-                year: year,
-                month: monthFolder,
-                date: safeDate,
-                fullPath: `/Kinerja_Harian/${year}/${monthFolder}/${safeDate}/`
-            };
-        }
-
-        function updateFolderPreview() {
-            const dateVal = document.getElementById('input-tanggal').value;
-            const info = buildFolderPathInfo(dateVal);
-            document.getElementById('tree-year').textContent = info.year;
-            document.getElementById('tree-month').textContent = info.month;
-            document.getElementById('tree-date').textContent = `${info.date}/`;
-        }
-
-        // -------------------------------------------------------------------
-        // 6. KAMERA / GALERI & AUTO-WATERMARKING PADA CANVAS
+        // 8B. FOTO WATERMARK CANVAS, DOKUMEN & UPLOAD GOOGLE DRIVE API v3
         // -------------------------------------------------------------------
         function handlePhotoSelected(event) {
-            const file = event.target.files[0];
+            const file = event.target.files?.[0];
             if (!file) return;
             appState.currentPhoto.rawFile = file;
             applyWatermarkToPhoto(file);
@@ -1221,96 +1631,59 @@
 
         function applyWatermarkToPhoto(file) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = (e) => {
                 const img = new Image();
-                img.onload = function() {
+                img.onload = () => {
                     const canvas = document.getElementById('watermark-canvas');
                     const ctx = canvas.getContext('2d');
 
-                    // Resize proporsional maks 1280px agar cepat & tajam saat upload ke Drive
-                    const MAX_DIM = 1280;
-                    let width = img.width;
-                    let height = img.height;
-                    if (width > MAX_DIM || height > MAX_DIM) {
-                        if (width > height) {
-                            height = Math.round((height * MAX_DIM) / width);
-                            width = MAX_DIM;
-                        } else {
-                            width = Math.round((width * MAX_DIM) / height);
-                            height = MAX_DIM;
-                        }
-                    }
+                    const maxWidth = 1280;
+                    const scale = img.width > maxWidth ? maxWidth / img.width : 1;
+                    canvas.width = Math.round(img.width * scale);
+                    canvas.height = Math.round(img.height * scale);
 
-                    canvas.width = width;
-                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-                    // Gambar foto asli
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    // Siapkan teks watermark
-                    const tanggal = document.getElementById('input-tanggal').value || getTodayDateString();
-                    const jamMulai = document.getElementById('input-jam-mulai').value || '08:00';
-                    const jamSelesai = document.getElementById('input-jam-selesai').value || '09:00';
-                    const kegiatan = document.getElementById('input-kegiatan').value.trim() || 'Dokumentasi Kegiatan Harian';
+                    const tanggal = document.getElementById('input-tanggal')?.value || getTodayDateString();
+                    const jamMulai = document.getElementById('input-jam-mulai')?.value || '08:00';
+                    const jamSelesai = document.getElementById('input-jam-selesai')?.value || '09:00';
                     const kategori = document.querySelector('input[name="kategori"]:checked')?.value || 'Kinerja';
-                    const pegawai = `${appState.profile.nama} (${appState.profile.jabatan})`;
+                    const kegiatan = (document.getElementById('input-kegiatan')?.value || 'Dokumentasi Kegiatan Kinerja').trim();
 
-                    // Overlay gradien gelap di bagian bawah foto
-                    const bannerHeight = Math.max(115, Math.round(height * 0.22));
-                    const grad = ctx.createLinearGradient(0, height - bannerHeight - 20, 0, height);
-                    grad.addColorStop(0, 'rgba(15, 23, 42, 0)');
-                    grad.addColorStop(0.25, 'rgba(15, 23, 42, 0.78)');
-                    grad.addColorStop(1, 'rgba(15, 23, 42, 0.94)');
-                    ctx.fillStyle = grad;
-                    ctx.fillRect(0, height - bannerHeight - 20, width, bannerHeight + 20);
+                    const bannerHeight = Math.max(95, Math.round(canvas.height * 0.16));
+                    ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+                    ctx.fillRect(0, canvas.height - bannerHeight, canvas.width, bannerHeight);
 
-                    // Garis aksen vertikal di kiri teks
-                    const pad = Math.round(width * 0.03);
-                    const fontSizeMain = Math.max(16, Math.round(width * 0.026));
-                    const fontSizeSub = Math.max(13, Math.round(width * 0.020));
-                    const fontSizeSmall = Math.max(11, Math.round(width * 0.017));
+                    const padX = Math.round(canvas.width * 0.03);
+                    const fontSizeBase = Math.max(14, Math.round(canvas.width * 0.022));
 
                     ctx.fillStyle = '#38bdf8';
-                    ctx.fillRect(pad, height - bannerHeight + 8, 5, bannerHeight - 22);
+                    ctx.font = `bold ${fontSizeBase}px sans-serif`;
+                    ctx.fillText(`📅 ${tanggal}   ⏰ ${jamMulai} - ${jamSelesai} WIB   🏷️ ${kategori}`, padX, canvas.height - bannerHeight + Math.round(bannerHeight * 0.34));
 
-                    const textX = pad + 16;
-                    let textY = height - bannerHeight + 12 + fontSizeMain;
-
-                    // Baris 1: Tanggal & Rentang Jam (Mulai - Selesai) + Kategori
-                    ctx.font = `bold ${fontSizeMain}px Inter, sans-serif`;
-                    ctx.fillStyle = '#fde047';
-                    ctx.fillText(`📅 ${tanggal}  ⏰ ${jamMulai} - ${jamSelesai} WIB  •  ${kategori}`, textX, textY);
-
-                    // Baris 2: Nama Kegiatan (potong jika terlalu panjang)
-                    textY += fontSizeSub + 10;
-                    ctx.font = `600 ${fontSizeSub}px Inter, sans-serif`;
                     ctx.fillStyle = '#ffffff';
-                    const maxChars = Math.floor((width - textX - pad) / (fontSizeSub * 0.55));
-                    const shortKegiatan = kegiatan.length > maxChars ? kegiatan.substring(0, maxChars - 3) + '...' : kegiatan;
-                    ctx.fillText(shortKegiatan, textX, textY);
+                    ctx.font = `600 ${Math.round(fontSizeBase * 0.95)}px sans-serif`;
+                    const clippedKegiatan = kegiatan.length > 68 ? kegiatan.slice(0, 65) + '...' : kegiatan;
+                    ctx.fillText(clippedKegiatan, padX, canvas.height - bannerHeight + Math.round(bannerHeight * 0.64));
 
-                    // Baris 3: Identitas Pegawai & Tag SiKinerja AI
-                    textY += fontSizeSmall + 9;
-                    ctx.font = `400 ${fontSizeSmall}px Inter, sans-serif`;
                     ctx.fillStyle = '#cbd5e1';
-                    //ctx.fillText(`👤 ${pegawai}  |  Terverifikasi`, textX, textY);
-                    ctx.fillText(`👤 ${pegawai}`, textX, textY);
+                    ctx.font = `${Math.round(fontSizeBase * 0.8)}px sans-serif`;
+                    ctx.fillText(`👤 ${appState.profile.nama} • ${appState.profile.jabatan}`, padX, canvas.height - bannerHeight + Math.round(bannerHeight * 0.88));
 
-                    // Konversi ke DataURL & Blob JPEG
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                    const safeJam = `${jamMulai.replace(':', '')}-${jamSelesai.replace(':', '')}`;
+                    const filename = `Foto_${tanggal}_${safeJam}.jpg`;
+
                     canvas.toBlob((blob) => {
-                        const cleanSlug = kegiatan.toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 25);
-                        const timeSlug = `${jamMulai.replace(':', '')}-${jamSelesai.replace(':', '')}`;
-                        const filename = `${tanggal.replace(/-/g, '')}_${timeSlug}_${cleanSlug || 'foto'}.jpg`;
-
-                        appState.currentPhoto.watermarkedDataUrl = dataUrl;
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
                         appState.currentPhoto.watermarkedBlob = blob;
+                        appState.currentPhoto.watermarkedDataUrl = dataUrl;
                         appState.currentPhoto.filename = filename;
 
                         document.getElementById('watermarked-preview-img').src = dataUrl;
-                        document.getElementById('photo-size-label').textContent = `${Math.round(blob.size / 1024)} KB`;
                         document.getElementById('photo-preview-container').classList.remove('hidden');
                         document.getElementById('photo-upload-buttons').classList.add('hidden');
+                        const sizeKb = blob ? Math.round(blob.size / 1024) : 0;
+                        document.getElementById('photo-size-label').textContent = `${sizeKb} KB • JPG`;
                     }, 'image/jpeg', 0.85);
                 };
                 img.src = e.target.result;
@@ -1320,154 +1693,52 @@
 
         function removePhoto() {
             appState.currentPhoto = { rawFile: null, watermarkedDataUrl: null, watermarkedBlob: null, filename: '' };
-            document.getElementById('photo-camera-input').value = '';
-            document.getElementById('photo-gallery-input').value = '';
+            const camInput = document.getElementById('photo-camera-input');
+            const galInput = document.getElementById('photo-gallery-input');
+            if (camInput) camInput.value = '';
+            if (galInput) galInput.value = '';
             document.getElementById('photo-preview-container').classList.add('hidden');
             document.getElementById('photo-upload-buttons').classList.remove('hidden');
         }
 
-        // -------------------------------------------------------------------
-        // 7. LAMPIRAN DOKUMEN (PDF / DOCX / XLSX)
-        // -------------------------------------------------------------------
         function handleDocSelected(event) {
-            const file = event.target.files[0];
+            const file = event.target.files?.[0];
             if (!file) return;
-
-            const sizeKB = Math.round(file.size / 1024);
-            const sizeText = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB} KB`;
-
+            const sizeKb = Math.round(file.size / 1024);
+            const sizeText = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(2)} MB` : `${sizeKb} KB`;
             appState.currentDoc = {
                 rawFile: file,
                 filename: file.name,
-                sizeText: sizeText
+                sizeText
             };
-
             document.getElementById('doc-filename-display').textContent = file.name;
             document.getElementById('doc-filesize-display').textContent = `Ukuran: ${sizeText} • Siap diupload ke Drive`;
             document.getElementById('doc-action-badge').textContent = 'Ganti';
-            document.getElementById('doc-dropzone').classList.add('border-brand-300', 'bg-brand-50/40');
         }
 
         function resetDocInput() {
             appState.currentDoc = { rawFile: null, filename: '', sizeText: '' };
-            document.getElementById('doc-file-input').value = '';
+            const docInput = document.getElementById('doc-file-input');
+            if (docInput) docInput.value = '';
             document.getElementById('doc-filename-display').textContent = 'Lampirkan File Dokumen (Opsional)';
             document.getElementById('doc-filesize-display').textContent = 'Notulensi, Surat Tugas, Laporan, Rekap Excel';
             document.getElementById('doc-action-badge').textContent = 'Pilih';
-            document.getElementById('doc-dropzone').classList.remove('border-brand-300', 'bg-brand-50/40');
         }
 
-        // -------------------------------------------------------------------
-        // 8. INTEGRASI NYATA GOOGLE IDENTITY SERVICES (GIS) & DRIVE API v3
-        // -------------------------------------------------------------------
-        function handleQuickDriveAction() {
-            if (appState.drive.isLive) {
-                showToast('Sudah terhubung dengan Google Drive Live!', 'success');
-            } else if (appState.drive.clientId) {
-                authorizeGoogleDrive();
-            } else {
-                switchTab('pengaturan');
-                showToast('Masukkan Google OAuth Client ID Anda untuk mode Live Drive.', 'info');
-            }
-        }
-
-        function saveClientIdAndConnect() {
-            const clientId = document.getElementById('set-client-id').value.trim();
-            if (!clientId) {
-                showToast('Harap isi Google OAuth Client ID terlebih dahulu.', 'error');
-                return;
-            }
-            appState.drive.clientId = clientId;
-            saveConfigToLocal();
-            authorizeGoogleDrive();
-        }
-
-        function authorizeGoogleDrive() {
-            if (!window.google || !google.accounts || !google.accounts.oauth2) {
-                showToast('Library Google Identity Services sedang dimuat, coba sesaat lagi.', 'error');
-                return;
-            }
-
-            try {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: appState.drive.clientId,
-                    scope: 'https://www.googleapis.com/auth/drive.file',
-                    callback: async (tokenResponse) => {
-                        if (tokenResponse && tokenResponse.access_token) {
-                            appState.drive.accessToken = tokenResponse.access_token;
-                            appState.drive.tokenExpiry = Date.now() + (tokenResponse.expires_in * 1000);
-                            appState.drive.isLive = true;
-                            updateDriveConnectionUI(true);
-                            showToast('Berhasil terhubung ke Google Drive pribadi!', 'success');
-
-                            // Jalankan sinkronisasi otomatis untuk data lokal yang belum terupload
-                            await syncLocalLogsToGoogleDrive(true);
-                        }
-                    },
-                });
-                tokenClient.requestAccessToken({ prompt: 'consent' });
-            } catch (err) {
-                console.error(err);
-                showToast('Gagal menginisialisasi OAuth Client ID. Periksa kembali ID Anda.', 'error');
-            }
-        }
-
-        function disconnectGoogleDrive() {
-            if (appState.drive.accessToken && window.google) {
-                google.accounts.oauth2.revoke(appState.drive.accessToken, () => {});
-            }
-            appState.drive.accessToken = null;
-            appState.drive.isLive = false;
-            updateDriveConnectionUI(false);
-            showToast('Beralih ke Mode Simulasi Lokal.', 'info');
-        }
-
-        function updateDriveConnectionUI(isLive) {
-            const dot = document.getElementById('drive-indicator-dot');
-            const icon = document.getElementById('drive-header-icon');
-            const badge = document.getElementById('drive-mode-badge');
-            const sub = document.getElementById('drive-account-sub');
-            const btn = document.getElementById('header-connect-btn');
-            const statusBox = document.getElementById('oauth-status-box');
-
-            if (isLive) {
-                dot.classList.replace('bg-amber-400', 'bg-emerald-400');
-                icon.classList.replace('text-amber-300', 'text-emerald-300');
-                badge.textContent = 'Google Drive API Live Terhubung';
-                sub.textContent = 'Auto-folder & upload langsung ke Google Drive Anda';
-                btn.textContent = 'Aktif';
-                btn.classList.add('bg-emerald-500', 'text-white');
-                btn.classList.remove('bg-white', 'text-brand-700');
-                statusBox.innerHTML = 'Status saat ini: <strong class="text-emerald-700">TERHUBUNG (Live Google Drive API v3)</strong>';
-            } else {
-                dot.classList.replace('bg-emerald-400', 'bg-amber-400');
-                icon.classList.replace('text-emerald-300', 'text-amber-300');
-                badge.textContent = 'Mode Simulasi / Demo Lokal';
-                sub.textContent = 'Tersimpan di memori HP & simulasi struktur Drive';
-                btn.textContent = 'Hubungkan';
-                btn.classList.remove('bg-emerald-500', 'text-white');
-                btn.classList.add('bg-white', 'text-brand-700');
-                statusBox.innerHTML = 'Status saat ini: <strong>Mode Simulasi Lokal</strong> (Belum terhubung token OAuth aktif).';
-            }
-        }
-
-        /**
-         * Mencari folder di Google Drive berdasarkan nama & parentId; jika belum ada, otomatis membuat folder baru.
-         */
         async function findOrCreateDriveFolder(folderName, parentId = 'root') {
             const token = appState.drive.accessToken;
             const query = `name='${folderName.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
-            
             const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,webViewLink)`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            if (!searchRes.ok) {
+                throw new Error(`Gagal mencari folder ${folderName} di Google Drive.`);
+            }
             const searchData = await searchRes.json();
-
             if (searchData.files && searchData.files.length > 0) {
                 return searchData.files[0];
             }
 
-            // Buat folder baru jika belum ditemukan
             const createRes = await fetch('https://www.googleapis.com/drive/v3/files?fields=id,name,webViewLink', {
                 method: 'POST',
                 headers: {
@@ -1480,174 +1751,50 @@
                     parents: [parentId]
                 })
             });
-
             if (!createRes.ok) {
-                throw new Error(`Gagal membuat folder ${folderName}`);
+                throw new Error(`Gagal membuat folder ${folderName} di Google Drive.`);
             }
             return await createRes.json();
         }
 
-        /**
-         * Mengupload file Blob/File ke folder spesifik di Google Drive menggunakan Multipart Upload REST API v3
-         */
-        async function uploadFileToDriveFolder(fileBlob, fileName, folderId) {
+        async function uploadFileToDriveFolder(fileOrBlob, filename, folderId) {
             const token = appState.drive.accessToken;
             const metadata = {
-                name: fileName,
+                name: filename,
                 parents: [folderId]
             };
 
             const form = new FormData();
             form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-            form.append('file', fileBlob);
+            form.append('file', fileOrBlob, filename);
 
-            const uploadRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink', {
+            const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: form
             });
 
-            if (!uploadRes.ok) {
-                throw new Error(`Gagal mengupload file ${fileName}`);
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error?.message || `Gagal mengupload ${filename} ke Google Drive.`);
             }
-            return await uploadRes.json();
+            return await res.json();
         }
 
-        /**
-         * Konversi DataURL (Base64) foto lokal menjadi Blob agar bisa diupload otomatis saat sinkronisasi
-         */
-        function dataUrlToBlob(dataUrl) {
-            const parts = dataUrl.split(',');
-            const mimeMatch = parts[0].match(/:(.*?);/);
-            const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-            const bstr = atob(parts[1]);
-            let n = bstr.length;
-            const u8arr = new Uint8Array(n);
-            while (n--) {
-                u8arr[n] = bstr.charCodeAt(n);
-            }
-            return new Blob([u8arr], { type: mime });
-        }
-
-        let isAutoSyncing = false;
-
-        /**
-         * Sinkronisasi otomatis seluruh data riwayat lokal (status 'Simulasi') ke Google Drive
-         * saat status Google Drive API Live terhubung.
-         */
-        async function syncLocalLogsToGoogleDrive(isAutoTriggered = true) {
-            if (isAutoSyncing) return;
-
-            const isTokenValid = appState.drive.isLive && appState.drive.accessToken && Date.now() < appState.drive.tokenExpiry;
-            if (!isTokenValid) {
-                if (!isAutoTriggered) {
-                    showToast('Hubungkan Google Drive Live terlebih dahulu untuk menyinkronkan data.', 'error');
-                }
-                return;
-            }
-
-            const pendingLogs = appState.logs.filter(item => item.syncMode !== 'Live Google Drive');
-            if (pendingLogs.length === 0) {
-                if (!isAutoTriggered) {
-                    showToast('Semua data kinerja sudah tersinkron dengan Google Drive.', 'info');
-                }
-                return;
-            }
-
-            isAutoSyncing = true;
-            const overlay = document.getElementById('upload-overlay');
-            const titleText = document.getElementById('upload-overlay-title');
-            const stepText = document.getElementById('upload-overlay-step');
-            const progressBar = document.getElementById('upload-progress-bar');
-
-            const originalTitle = titleText.textContent;
-            titleText.textContent = 'Sinkronisasi Otomatis ke Drive...';
-            overlay.classList.remove('hidden');
-            progressBar.style.width = '10%';
-
-            let syncedCount = 0;
-            const folderCache = {};
-
-            try {
-                for (let i = 0; i < pendingLogs.length; i++) {
-                    const item = pendingLogs[i];
-                    const folderInfo = buildFolderPathInfo(item.tanggal);
-                    const pct = Math.round(((i + 0.5) / pendingLogs.length) * 90) + 5;
-                    progressBar.style.width = `${pct}%`;
-                    stepText.textContent = `Menyinkronkan (${i + 1}/${pendingLogs.length}): ${item.kegiatan.substring(0, 35)}...`;
-
-                    // Gunakan cache folder per tanggal agar hemat request API
-                    let dateFolder = folderCache[item.tanggal];
-                    if (!dateFolder) {
-                        const rootFolder = await findOrCreateDriveFolder(folderInfo.root, 'root');
-                        const yearFolder = await findOrCreateDriveFolder(folderInfo.year, rootFolder.id);
-                        const monthFolder = await findOrCreateDriveFolder(folderInfo.month, yearFolder.id);
-                        dateFolder = await findOrCreateDriveFolder(folderInfo.date, monthFolder.id);
-                        folderCache[item.tanggal] = dateFolder;
-                    }
-
-                    item.driveFolderUrl = dateFolder.webViewLink;
-
-                    // Upload foto lokal ber-watermark jika tersedia
-                    if (item.photoDataUrl && !item.photoDriveUrl) {
-                        const photoBlob = dataUrlToBlob(item.photoDataUrl);
-                        const photoFileName = item.photoName || `${item.tanggal.replace(/-/g, '')}_bukti_foto.jpg`;
-                        const uploadedPhoto = await uploadFileToDriveFolder(photoBlob, photoFileName, dateFolder.id);
-                        item.photoDriveUrl = uploadedPhoto.webViewLink || (uploadedPhoto.id ? `https://drive.google.com/file/d/${uploadedPhoto.id}/view` : null);
-                    }
-
-                    // Buat file log ringkasan .txt di folder tanggal agar catatan kinerja tetap terarsip di Drive
-                    const startT = item.jamMulai || item.jam || '08:00';
-                    const endT = item.jamSelesai || addMinutesToTime(startT, 60);
-                    const summaryText = [
-                        'DOKUMENTASI LOG KINERJA - SIKINERJA AI',
-                        `Pegawai   : ${appState.profile.nama} (${appState.profile.jabatan})`,
-                        `Tanggal   : ${item.tanggal}`,
-                        `Waktu     : ${startT} - ${endT} WIB (${item.durasiText || ''})`,
-                        `Kategori  : ${item.kategori}`,
-                        `Kegiatan  : ${item.kegiatan}`,
-                        `Output    : ${item.hasilJumlah || '1'} ${item.hasilSatuan || 'Kegiatan'}`,
-                        `Bukti Foto: ${item.photoDriveUrl || item.photoName || '-'}`,
-                        `Dokumen   : ${item.docName || '-'}`
-                    ].join('\n');
-
-                    const logSlug = item.kegiatan.toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 20);
-                    const logFileName = `${item.tanggal.replace(/-/g, '')}_${startT.replace(':', '')}_log_${logSlug || 'kinerja'}.txt`;
-                    const logBlob = new Blob([summaryText], { type: 'text/plain;charset=utf-8' });
-                    const uploadedLog = await uploadFileToDriveFolder(logBlob, logFileName, dateFolder.id);
-
-                    if (!item.docDriveUrl && uploadedLog) {
-                        item.docDriveUrl = uploadedLog.webViewLink || (uploadedLog.id ? `https://drive.google.com/file/d/${uploadedLog.id}/view` : null);
-                    }
-
-                    item.syncMode = 'Live Google Drive';
-                    syncedCount++;
-                }
-
-                progressBar.style.width = '100%';
-                saveLogsToLocal();
-                renderHistoryList();
-                overlay.classList.add('hidden');
-                titleText.textContent = originalTitle;
-                showToast(`${syncedCount} catatan lokal berhasil disinkronkan ke Google Drive!`, 'success');
-            } catch (err) {
-                console.error('Gagal sinkronisasi otomatis:', err);
-                saveLogsToLocal();
-                renderHistoryList();
-                overlay.classList.add('hidden');
-                titleText.textContent = originalTitle;
-                showToast(`Sinkronisasi terhenti (${syncedCount}/${pendingLogs.length} berhasil): ${err.message}`, 'error');
-            } finally {
-                isAutoSyncing = false;
-            }
-        }
-
-        // -------------------------------------------------------------------
-        // 9. PROSES SIMPAN KINERJA (LIVE DRIVE ATAU SIMULASI LOKAL)
-        // -------------------------------------------------------------------
         async function handleSaveKinerja(event) {
             event.preventDefault();
 
+            if (!isGoogleConnected()) {
+                showToast('Peringatan: Hubungkan Google Sheets & Google Drive terlebih dahulu sebelum menyimpan data!', 'error');
+                const banner = document.getElementById('connection-warning-banner');
+                if (banner) {
+                    banner.classList.remove('hidden');
+                    banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+            }
+
+            const rencanaAksi = document.getElementById('input-rencana-aksi').value.trim();
             const tanggal = document.getElementById('input-tanggal').value;
             const jamMulai = document.getElementById('input-jam-mulai').value;
             const jamSelesai = document.getElementById('input-jam-selesai').value;
@@ -1655,6 +1802,11 @@
             const hasilJumlah = document.getElementById('input-hasil-jumlah').value.trim() || '1';
             const hasilSatuan = document.getElementById('input-hasil-satuan').value.trim() || 'Kegiatan';
             const kategori = document.querySelector('input[name="kategori"]:checked')?.value || 'Rapat/Koordinasi';
+
+            if (!rencanaAksi) {
+                showToast('Silakan pilih Rencana Aksi terlebih dahulu.', 'error');
+                return;
+            }
 
             if (!tanggal || !jamMulai || !jamSelesai || !kegiatan) {
                 showToast('Lengkapi Tanggal, Jam Mulai, Jam Selesai, dan Uraian Kegiatan.', 'error');
@@ -1669,66 +1821,54 @@
 
             const folderInfo = buildFolderPathInfo(tanggal);
             const overlay = document.getElementById('upload-overlay');
+            const titleText = document.getElementById('upload-overlay-title');
             const stepText = document.getElementById('upload-overlay-step');
             const progressBar = document.getElementById('upload-progress-bar');
 
+            titleText.textContent = 'Menyimpan ke Google Sheets & Drive...';
             overlay.classList.remove('hidden');
-            progressBar.style.width = '25%';
+            progressBar.style.width = '20%';
 
             let driveFolderUrl = null;
             let photoDriveUrl = null;
             let docDriveUrl = null;
-            let syncMode = 'Simulasi';
+            const syncMode = 'Google Sheets & Drive';
 
             try {
-                // Cek apakah token Live Drive masih valid
-                const isTokenValid = appState.drive.isLive && appState.drive.accessToken && Date.now() < appState.drive.tokenExpiry;
+                stepText.textContent = `Membuat hierarki folder ${folderInfo.fullPath}...`;
+                
+                // Buat berjenjang: Kinerja_Harian -> Tahun -> Bulan -> Tanggal
+                const rootFolder = await findOrCreateDriveFolder(folderInfo.root, 'root');
+                progressBar.style.width = '40%';
+                const yearFolder = await findOrCreateDriveFolder(folderInfo.year, rootFolder.id);
+                const monthFolder = await findOrCreateDriveFolder(folderInfo.month, yearFolder.id);
+                const dateFolder = await findOrCreateDriveFolder(folderInfo.date, monthFolder.id);
+                driveFolderUrl = dateFolder.webViewLink;
+                progressBar.style.width = '55%';
 
-                if (isTokenValid) {
-                    syncMode = 'Live Google Drive';
-                    stepText.textContent = `Membuat hierarki folder ${folderInfo.fullPath}...`;
-                    
-                    // Buat berjenjang: Kinerja_Harian -> Tahun -> Bulan -> Tanggal
-                    const rootFolder = await findOrCreateDriveFolder(folderInfo.root, 'root');
-                    progressBar.style.width = '45%';
-                    const yearFolder = await findOrCreateDriveFolder(folderInfo.year, rootFolder.id);
-                    const monthFolder = await findOrCreateDriveFolder(folderInfo.month, yearFolder.id);
-                    const dateFolder = await findOrCreateDriveFolder(folderInfo.date, monthFolder.id);
-                    driveFolderUrl = dateFolder.webViewLink;
-                    progressBar.style.width = '65%';
-
-                    // Upload Foto Ber-Watermark jika ada
-                    if (appState.currentPhoto.watermarkedBlob) {
-                        stepText.textContent = `Mengupload foto bukti: ${appState.currentPhoto.filename}...`;
-                        const uploadedPhoto = await uploadFileToDriveFolder(
-                            appState.currentPhoto.watermarkedBlob,
-                            appState.currentPhoto.filename,
-                            dateFolder.id
-                        );
-                        photoDriveUrl = uploadedPhoto.webViewLink || (uploadedPhoto.id ? `https://drive.google.com/file/d/${uploadedPhoto.id}/view` : null);
-                    }
-                    progressBar.style.width = '85%';
-
-                    // Upload Dokumen Pendukung jika ada
-                    if (appState.currentDoc.rawFile) {
-                        stepText.textContent = `Mengupload dokumen: ${appState.currentDoc.filename}...`;
-                        const uploadedDoc = await uploadFileToDriveFolder(
-                            appState.currentDoc.rawFile,
-                            appState.currentDoc.filename,
-                            dateFolder.id
-                        );
-                        docDriveUrl = uploadedDoc.webViewLink || (uploadedDoc.id ? `https://drive.google.com/file/d/${uploadedDoc.id}/view` : null);
-                    }
-                    progressBar.style.width = '100%';
-                } else {
-                    // Simulasi proses pembuatan folder & pengarsipan
-                    stepText.textContent = `Menyiapkan struktur ${folderInfo.fullPath}...`;
-                    await new Promise(r => setTimeout(r, 450));
-                    progressBar.style.width = '70%';
-                    stepText.textContent = 'Menyimpan metadata & bukti dukung ke penyimpanan lokal...';
-                    await new Promise(r => setTimeout(r, 400));
-                    progressBar.style.width = '100%';
+                // Upload Foto Ber-Watermark jika ada
+                if (appState.currentPhoto.watermarkedBlob) {
+                    stepText.textContent = `Mengupload foto bukti: ${appState.currentPhoto.filename}...`;
+                    const uploadedPhoto = await uploadFileToDriveFolder(
+                        appState.currentPhoto.watermarkedBlob,
+                        appState.currentPhoto.filename,
+                        dateFolder.id
+                    );
+                    photoDriveUrl = uploadedPhoto.webViewLink || (uploadedPhoto.id ? `https://drive.google.com/file/d/${uploadedPhoto.id}/view` : null);
                 }
+                progressBar.style.width = '75%';
+
+                // Upload Dokumen Pendukung jika ada
+                if (appState.currentDoc.rawFile) {
+                    stepText.textContent = `Mengupload dokumen: ${appState.currentDoc.filename}...`;
+                    const uploadedDoc = await uploadFileToDriveFolder(
+                        appState.currentDoc.rawFile,
+                        appState.currentDoc.filename,
+                        dateFolder.id
+                    );
+                    docDriveUrl = uploadedDoc.webViewLink || (uploadedDoc.id ? `https://drive.google.com/file/d/${uploadedDoc.id}/view` : null);
+                }
+                progressBar.style.width = '88%';
 
                 // Buat objek log kinerja baru
                 const newEntry = {
@@ -1738,6 +1878,7 @@
                     jamSelesai,
                     durasiMenit: durationInfo.minutes,
                     durasiText: durationInfo.text,
+                    rencanaAksi,
                     kategori,
                     kegiatan,
                     hasilJumlah,
@@ -1753,10 +1894,16 @@
                     createdAt: new Date().toISOString()
                 };
 
+                // Simpan baris data ke database Google Sheets
+                stepText.textContent = `Mencatat baris data ke Google Sheets (${SPREADSHEET_FILE_NAME})...`;
+                await appendLogToGoogleSheet(newEntry);
+                progressBar.style.width = '100%';
+
                 appState.logs.unshift(newEntry);
-                saveLogsToLocal();
+                updateNavBadge();
 
                 // Reset Form
+                document.getElementById('input-rencana-aksi').value = '';
                 document.getElementById('input-kegiatan').value = '';
                 document.getElementById('input-hasil-jumlah').value = '1';
                 document.getElementById('input-hasil-satuan').value = 'Kegiatan';
@@ -1767,12 +1914,7 @@
                 resetCurrentTime();
 
                 overlay.classList.add('hidden');
-                showToast(
-                    syncMode === 'Live Google Drive'
-                        ? 'Tersimpan & terupload ke Google Drive!'
-                        : 'Kinerja dicatat di riwayat lokal!',
-                    'success'
-                );
+                showToast('Tersimpan ke database Google Sheets & Google Drive!', 'success');
 
                 // Arahkan otomatis ke tab Riwayat agar pengguna langsung melihat hasil dokumentasi
                 switchTab('riwayat');
@@ -1780,7 +1922,7 @@
             } catch (err) {
                 console.error(err);
                 overlay.classList.add('hidden');
-                showToast(`Terjadi kesalahan upload: ${err.message}`, 'error');
+                showToast(`Gagal menyimpan ke Google Sheets/Drive: ${err.message}`, 'error');
             }
         }
 
@@ -1829,7 +1971,7 @@
             // Update statistik ringkas
             document.getElementById('stat-total').textContent = filteredLogs.length;
             document.getElementById('stat-durasi').textContent = `${totalHours}j ${remMinutes}m`;
-            document.getElementById('stat-drive').textContent = filteredLogs.filter(l => l.syncMode === 'Live Google Drive').length;
+            document.getElementById('stat-drive').textContent = filteredLogs.length;
             updateNavBadge();
 
             // Tampilkan/sembunyikan banner sinkronisasi otomatis untuk data lokal yang belum tersinkron
@@ -1878,6 +2020,7 @@
                         <tr class="border-b border-slate-300 align-top">
                             <td class="p-1.5 border border-slate-300 text-center">${idx + 1}</td>
                             <td class="p-1.5 border border-slate-300 whitespace-nowrap">${item.tanggal}<br>${startT} - ${endT}</td>
+                            <td class="p-1.5 border border-slate-300">${escapeHtml(item.rencanaAksi || '-')}</td>
                             <td class="p-1.5 border border-slate-300">${escapeHtml(item.kegiatan)}<br><span class="text-[9px] text-slate-500">[${escapeHtml(item.kategori)}]</span></td>
                             <td class="p-1.5 border border-slate-300 text-center font-semibold">${escapeHtml(jml)}</td>
                             <td class="p-1.5 border border-slate-300">${escapeHtml(sat)}</td>
@@ -1892,6 +2035,7 @@
                             <tr class="bg-slate-100 font-bold text-slate-800">
                                 <th class="p-1.5 border border-slate-400 text-center w-8">No</th>
                                 <th class="p-1.5 border border-slate-400 w-24">Tanggal & Jam</th>
+                                <th class="p-1.5 border border-slate-400 w-40">Rencana Aksi</th>
                                 <th class="p-1.5 border border-slate-400">Uraian Kegiatan</th>
                                 <th class="p-1.5 border border-slate-400 text-center w-14">Jumlah</th>
                                 <th class="p-1.5 border border-slate-400 w-20">Satuan</th>
@@ -1904,13 +2048,22 @@
             }
 
             if (filteredLogs.length === 0) {
+                const emptyTitle = isGoogleConnected() ? 'Belum Ada Catatan di Google Sheets' : 'Database Google Sheets Belum Terhubung';
+                const emptyDesc = isGoogleConnected() 
+                    ? 'Mulai catat kegiatan harian Anda melalui tab Catat atau tekan Muat Sheet.'
+                    : 'Hubungkan akun Google Anda terlebih dahulu untuk memuat & menyimpan data ke Google Sheets.';
                 container.innerHTML = `
                     <div class="bg-white rounded-3xl p-8 text-center shadow-android border border-slate-100">
                         <div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
                             <i data-lucide="folder-search" class="w-7 h-7"></i>
                         </div>
-                        <h4 class="font-display font-bold text-sm text-slate-700">Belum Ada Catatan Kinerja</h4>
-                        <p class="text-xs text-slate-500 mt-1">Mulai catat kegiatan harian Anda melalui tab Catat.</p>
+                        <h4 class="font-display font-bold text-sm text-slate-700">${emptyTitle}</h4>
+                        <p class="text-xs text-slate-500 mt-1">${emptyDesc}</p>
+                        ${!isGoogleConnected() ? `
+                            <button type="button" onclick="handleQuickDriveAction()" class="mt-3 px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-semibold shadow-sm">
+                                Hubungkan Sekarang
+                            </button>
+                        ` : ''}
                     </div>
                 `;
                 lucide.createIcons();
@@ -1918,10 +2071,7 @@
             }
 
             container.innerHTML = filteredLogs.map(item => {
-                const isLive = item.syncMode === 'Live Google Drive';
-                const badgeClass = isLive 
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                    : 'bg-amber-50 text-amber-700 border-amber-200';
+                const badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
                 
                 const startT = item.jamMulai || item.jam || '08:00';
                 const endT = item.jamSelesai || addMinutesToTime(startT, 60);
@@ -1979,10 +2129,14 @@
                                     ${item.kategori}
                                 </span>
                             </div>
-                            <button type="button" onclick="deleteHistoryItem('${item.id}')" class="text-slate-400 hover:text-rose-500 p-1 no-print" title="Hapus Log">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
                         </div>
+
+                        ${item.rencanaAksi ? `
+                            <div class="bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-1.5 text-[11px] text-slate-600 flex items-start gap-1.5">
+                                <i data-lucide="target" class="w-3.5 h-3.5 text-brand-600 shrink-0 mt-0.5"></i>
+                                <span class="leading-snug font-medium">${escapeHtml(item.rencanaAksi)}</span>
+                            </div>
+                        ` : ''}
 
                         <p class="text-sm font-medium text-slate-800 leading-snug">${escapeHtml(item.kegiatan)}</p>
 
@@ -2005,7 +2159,7 @@
                                 ${driveLinkHtml}
                             </div>
                             <span class="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${badgeClass}">
-                                ${item.syncMode}
+                                ${item.syncMode || 'Google Sheets & Drive'}
                             </span>
                         </div>
                     </article>
@@ -2013,20 +2167,6 @@
             }).join('');
 
             lucide.createIcons();
-        }
-
-        function deleteHistoryItem(id) {
-            appState.logs = appState.logs.filter(item => item.id !== id);
-            saveLogsToLocal();
-            renderHistoryList();
-            showToast('Catatan kinerja dihapus.', 'info');
-        }
-
-        function clearAllLocalData() {
-            appState.logs = [];
-            localStorage.removeItem(STORAGE_KEY_LOGS);
-            renderHistoryList();
-            showToast('Seluruh cache riwayat lokal telah dibersihkan.', 'info');
         }
 
         function exportToCSV() {
@@ -2046,6 +2186,7 @@
                 'Jam Mulai',
                 'Jam Selesai',
                 'Durasi',
+                'Rencana Aksi',
                 'Kategori',
                 'Uraian Kegiatan',
                 'Jumlah Hasil',
@@ -2069,6 +2210,7 @@
                     startT,
                     endT,
                     `"${durLabel}"`,
+                    `"${(item.rencanaAksi || '-').replace(/"/g, '""')}"`,
                     `"${(item.kategori || '').replace(/"/g, '""')}"`,
                     `"${(item.kegiatan || '').replace(/"/g, '""')}"`,
                     `"${String(jmlHasil).replace(/"/g, '""')}"`,
