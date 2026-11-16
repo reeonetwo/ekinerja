@@ -657,19 +657,31 @@
 
                     <div class="bg-blue-50/80 border border-blue-100 rounded-2xl p-3 text-[11px] text-blue-900 space-y-1.5">
                         <p class="font-semibold flex items-center gap-1">
-                            <i data-lucide="info" class="w-3.5 h-3.5 text-blue-600"></i> Wajib Daftarkan Origin URL Berikut di Google Cloud:
+                            <i data-lucide="info" class="w-3.5 h-3.5 text-blue-600"></i> Wajib Daftarkan 2 URL Ini di Google Cloud:
                         </p>
-                        <div class="flex items-center gap-1.5 bg-white border border-blue-200 rounded-xl px-2.5 py-1.5">
-                            <code id="current-origin-display" class="text-[10px] font-mono text-slate-800 truncate flex-1">Memuat origin...</code>
-                            <button type="button" onclick="copyCurrentOrigin()" class="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-semibold shrink-0">
-                                Salin URL
-                            </button>
+                        <div class="space-y-1">
+                            <span class="text-[10px] font-bold text-blue-800 block">1. Authorized JavaScript origins:</span>
+                            <div class="flex items-center gap-1.5 bg-white border border-blue-200 rounded-xl px-2.5 py-1.5">
+                                <code id="current-origin-display" class="text-[10px] font-mono text-slate-800 truncate flex-1">Memuat origin...</code>
+                                <button type="button" onclick="copyCurrentOrigin()" class="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-semibold shrink-0">
+                                    Salin
+                                </button>
+                            </div>
                         </div>
-                        <ol class="list-decimal pl-4 space-y-0.5 text-blue-800">
+                        <div class="space-y-1">
+                            <span class="text-[10px] font-bold text-blue-800 block">2. Authorized redirect URIs (Untuk Login Tab Penuh):</span>
+                            <div class="flex items-center gap-1.5 bg-white border border-blue-200 rounded-xl px-2.5 py-1.5">
+                                <code id="current-redirect-display" class="text-[10px] font-mono text-slate-800 truncate flex-1">Memuat redirect URI...</code>
+                                <button type="button" onclick="copyCurrentRedirectUri()" class="px-2 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-semibold shrink-0">
+                                    Salin
+                                </button>
+                            </div>
+                        </div>
+                        <ol class="list-decimal pl-4 space-y-0.5 text-blue-800 pt-1">
                             <li>Buka <strong>Google Cloud Console &gt; APIs &amp; Services &gt; Credentials</strong>.</li>
-                            <li>Edit <strong>OAuth 2.0 Client ID</strong> Anda, lalu tempel URL di atas (<code>https://reeonetwo.github.io</code>) ke bagian <strong>Authorized JavaScript origins</strong>.</li>
-                            <li>Pada <strong>Authorized redirect URIs</strong>, tambahkan URL lengkap halaman Anda (misal: <code>https://reeonetwo.github.io/ekinerja/</code>) lalu klik <strong>Save</strong>.</li>
-                            <li>Pastikan <strong>Google Drive API</strong> &amp; <strong>Google Sheets API</strong> berstatus <em>Enabled</em> di menu Library.</li>
+                            <li>Pastikan jenis OAuth Client ID Anda adalah <strong>Web application</strong>.</li>
+                            <li>Tempel kedua URL di atas ke masing-masing kolom di Google Cloud lalu klik <strong>Save</strong>.</li>
+                            <li>Pastikan <strong>Google Drive API</strong> &amp; <strong>Google Sheets API</strong> berstatus <em>Enabled</em>.</li>
                             <li>Jika status OAuth masih <em>Testing</em>, pastikan email Anda terdaftar di <strong>Test users</strong>.</li>
                         </ol>
                     </div>
@@ -881,100 +893,12 @@
             if (originEl) {
                 originEl.textContent = window.location.origin || 'null';
             }
+            const redirectEl = document.getElementById('current-redirect-display');
+            if (redirectEl) {
+                redirectEl.textContent = (window.location.origin + window.location.pathname) || 'null';
+            }
 
             try {
-                const raw = localStorage.getItem(STORAGE_KEY_CONFIG);
-                if (raw) {
-                    const saved = JSON.parse(raw);
-                    if (saved.profile) {
-                        appState.profile = { ...appState.profile, ...saved.profile };
-                    }
-                    if (saved.clientId) {
-                        appState.drive.clientId = saved.clientId;
-                    }
-                    if (saved.spreadsheetId) {
-                        appState.drive.spreadsheetId = saved.spreadsheetId;
-                    }
-                    if (Array.isArray(saved.rencanaAksiList) && saved.rencanaAksiList.length > 0) {
-                        appState.rencanaAksiList = saved.rencanaAksiList;
-                    }
-                }
-            } catch (e) {
-                console.warn('Gagal membaca konfigurasi tersimpan:', e);
-            }
-
-            const clientIdInput = document.getElementById('set-client-id');
-            if (clientIdInput) {
-                if (appState.drive.clientId) {
-                    clientIdInput.value = appState.drive.clientId;
-                } else if (clientIdInput.value.trim()) {
-                    appState.drive.clientId = clientIdInput.value.trim();
-                }
-            }
-
-            const sheetIdInput = document.getElementById('set-spreadsheet-id');
-            if (sheetIdInput && appState.drive.spreadsheetId) {
-                sheetIdInput.value = appState.drive.spreadsheetId;
-            }
-
-            const namaInput = document.getElementById('set-nama');
-            const jabatanInput = document.getElementById('set-jabatan');
-            if (namaInput) namaInput.value = appState.profile.nama;
-            if (jabatanInput) jabatanInput.value = appState.profile.jabatan;
-
-            updateHeaderProfileUI();
-            renderRencanaAksiOptions();
-            updateDriveConnectionUI(false);
-        }
-
-        async function connectWithManualToken() {
-            const tokenInput = document.getElementById('manual-access-token');
-            const token = tokenInput?.value.trim();
-            if (!token) {
-                showToast('Masukkan Access Token terlebih dahulu.', 'error');
-                return;
-            }
-            appState.drive.accessToken = token;
-            appState.drive.tokenExpiry = Date.now() + (55 * 60 * 1000);
-            appState.drive.isLive = true;
-            updateDriveConnectionUI(true);
-            showToast('Terhubung menggunakan Access Token manual!', 'success');
-            await fetchLogsFromGoogleSheet(false);
-        }
-
-        function isGoogleConnected() {
-            return Boolean(appState.drive.isLive && appState.drive.accessToken && Date.now() < appState.drive.tokenExpiry);
-        }
-
-        function handleQuickDriveAction() {
-            if (isGoogleConnected()) {
-                switchTab('pengaturan');
-                return;
-            }
-            const cid = (document.getElementById('set-client-id')?.value || appState.drive.clientId || '').trim();
-            if (!cid) {
-                switchTab('pengaturan');
-                showToast('Masukkan Google OAuth 2.0 Client ID terlebih dahulu.', 'info');
-                return;
-            }
-            appState.drive.clientId = cid;
-            saveConfigToLocal();
-            authorizeGoogleDrive();
-        }
-
-        function saveClientIdAndConnect() {
-            const cid = document.getElementById('set-client-id').value.trim();
-            const sid = document.getElementById('set-spreadsheet-id').value.trim();
-            if (!cid) {
-                showToast('Google OAuth 2.0 Client ID tidak boleh kosong!', 'error');
-                return;
-            }
-            appState.drive.clientId = cid;
-            appState.drive.spreadsheetId = sid;
-            saveConfigToLocal();
-            authorizeGoogleDrive();
-        }
-
         function authorizeViaRedirectFallback() {
             const cid = document.getElementById('set-client-id').value.trim();
             if (!cid) {
@@ -989,162 +913,27 @@
             appState.drive.spreadsheetId = document.getElementById('set-spreadsheet-id').value.trim();
             saveConfigToLocal();
 
-            const cleanPath = window.location.pathname.endsWith('/') || window.location.pathname.endsWith('.html')
-                ? window.location.pathname
-                : window.location.pathname + '/';
-            const redirectUri = window.location.origin + cleanPath;
+            const redirectUri = window.location.origin + window.location.pathname;
             const scope = encodeURIComponent('https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets');
             const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(cid)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${scope}&include_granted_scopes=true&prompt=consent`;
 
             window.location.assign(authUrl);
         }
 
-        async function handleOAuthRedirectCallback() {
-            if (!window.location.hash || !window.location.hash.includes('access_token=')) return;
-            const params = new URLSearchParams(window.location.hash.substring(1));
-            const token = params.get('access_token');
-            const expiresIn = parseInt(params.get('expires_in') || '3600', 10);
-            if (token) {
-                appState.drive.accessToken = token;
-                appState.drive.tokenExpiry = Date.now() + (expiresIn * 1000);
-                appState.drive.isLive = true;
-                history.replaceState(null, '', window.location.pathname + window.location.search);
-                updateDriveConnectionUI(true);
-                showToast('Berhasil terhubung ke Google Drive & Google Sheets!', 'success');
-                await fetchLogsFromGoogleSheet(true);
-            }
-        }
-
-        function saveConfigToLocal() {
-            localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify({
-                profile: appState.profile,
-                clientId: appState.drive.clientId,
-                spreadsheetId: appState.drive.spreadsheetId,
-                rencanaAksiList: appState.rencanaAksiList
-            }));
-        }
-
-        function renderRencanaAksiOptions() {
-            const selectEl = document.getElementById('input-rencana-aksi');
-            const settingsListEl = document.getElementById('settings-rencana-aksi-list');
-            const previousVal = selectEl ? selectEl.value : '';
-
-            if (selectEl) {
-                const placeholderOpt = `<option value="" disabled ${!previousVal ? 'selected' : ''}>-- Pilih Rencana Aksi --</option>`;
-                const optionsHtml = appState.rencanaAksiList.map(item => {
-                    const selected = item === previousVal ? 'selected' : '';
-                    return `<option value="${escapeHtml(item)}" ${selected}>${escapeHtml(item)}</option>`;
-                }).join('');
-                selectEl.innerHTML = placeholderOpt + optionsHtml;
-            }
-
-            if (settingsListEl) {
-                settingsListEl.innerHTML = appState.rencanaAksiList.map((item, idx) => `
-                    <div class="flex items-start justify-between gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-                        <span class="text-slate-700 leading-snug flex-1">${idx + 1}. ${escapeHtml(item)}</span>
-                        <button type="button" onclick="removeRencanaAksiOption(${idx})" class="text-slate-400 hover:text-rose-600 p-0.5 shrink-0" title="Hapus Rencana Aksi">
-                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                        </button>
-                    </div>
-                `).join('');
-                lucide.createIcons();
-            }
-        }
-
-        function addRencanaAksiOption() {
-            const inputEl = document.getElementById('new-rencana-aksi-input');
-            const val = inputEl.value.trim();
-            if (!val) {
-                showToast('Tuliskan uraian Rencana Aksi terlebih dahulu.', 'error');
-                return;
-            }
-            if (appState.rencanaAksiList.includes(val)) {
-                showToast('Rencana Aksi tersebut sudah ada dalam daftar.', 'info');
-                return;
-            }
-            appState.rencanaAksiList.push(val);
-            saveConfigToLocal();
-            renderRencanaAksiOptions();
-            inputEl.value = '';
-            showToast('Rencana Aksi baru berhasil ditambahkan!', 'success');
-        }
-
-        function removeRencanaAksiOption(index) {
-            if (appState.rencanaAksiList.length <= 1) {
-                showToast('Minimal harus tersisa 1 pilihan Rencana Aksi.', 'error');
-                return;
-            }
-            appState.rencanaAksiList.splice(index, 1);
-            saveConfigToLocal();
-            renderRencanaAksiOptions();
-            showToast('Opsi Rencana Aksi dihapus.', 'info');
-        }
-
-        function resetDefaultRencanaAksi() {
-            appState.rencanaAksiList = [...DEFAULT_RENCANA_AKSI];
-            saveConfigToLocal();
-            renderRencanaAksiOptions();
-            showToast('Daftar Rencana Aksi dikembalikan ke bawaan.', 'success');
-        }
-
-        function updateHeaderProfileUI() {
-            document.getElementById('header-user-info').textContent = `${appState.profile.nama} • ${appState.profile.jabatan}`;
-        }
-
-        function saveProfileSettings() {
-            const nama = document.getElementById('set-nama').value.trim();
-            const jabatan = document.getElementById('set-jabatan').value.trim();
-            if (!nama) {
-                showToast('Nama pegawai tidak boleh kosong.', 'error');
-                return;
-            }
-            appState.profile.nama = nama;
-            appState.profile.jabatan = jabatan || 'Pegawai';
-            saveConfigToLocal();
-            updateHeaderProfileUI();
-            refreshWatermarkIfPhotoExists();
-            showToast('Profil pegawai berhasil disimpan!', 'success');
-        }
-
-        function copyCurrentOrigin() {
-            const origin = window.location.origin;
-            if (!origin || origin === 'null' || window.location.protocol === 'file:') {
-                showToast('Aplikasi dibuka dari file lokal (file://). Jalankan melalui server HTTP/HTTPS agar OAuth Google berfungsi.', 'error');
+        function copyCurrentRedirectUri() {
+            const redirectUri = window.location.origin + window.location.pathname;
+            if (!window.location.origin || window.location.origin === 'null' || window.location.protocol === 'file:') {
+                showToast('Jalankan melalui server HTTP/HTTPS agar Redirect URI valid.', 'error');
                 return;
             }
             const tempInput = document.createElement('input');
-            tempInput.value = origin;
+            tempInput.value = redirectUri;
             document.body.appendChild(tempInput);
             tempInput.select();
             document.execCommand('copy');
             document.body.removeChild(tempInput);
-            showToast(`Origin "${origin}" disalin! Tempel di Authorized JavaScript origins.`, 'success');
+            showToast(`Redirect URI "${redirectUri}" disalin! Tempel di Authorized redirect URIs.`, 'success');
         }
-
-        function authorizeGoogleDrive() {
-            if (window.location.protocol === 'file:' || window.location.origin === 'null') {
-                const msg = 'Google OAuth tidak mengizinkan protokol file://. Jalankan file HTML ini melalui web server (localhost / HTTPS).';
-                document.getElementById('oauth-status-box').innerHTML = `Gagal Koneksi: <strong>${msg}</strong>`;
-                showToast(msg, 'error');
-                return;
-            }
-
-            if (!window.google || !google.accounts || !google.accounts.oauth2) {
-                showToast('Library Google Identity Services sedang dimuat atau diblokir browser, coba sesaat lagi.', 'error');
-                return;
-            }
-
-            try {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: appState.drive.clientId,
-                    scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets',
-                    callback: async (tokenResponse) => {
-                        if (tokenResponse && tokenResponse.error) {
-                            const errMsg = `${tokenResponse.error}: ${tokenResponse.error_description || 'Akses ditolak oleh Google.'}`;
-                            document.getElementById('oauth-status-box').innerHTML = `Error OAuth Google: <strong>${escapeHtml(errMsg)}</strong>`;
-                            showToast(`OAuth Error: ${errMsg}`, 'error');
-                            return;
-                        }
                         if (tokenResponse && tokenResponse.access_token) {
                             appState.drive.accessToken = tokenResponse.access_token;
                             appState.drive.tokenExpiry = Date.now() + (tokenResponse.expires_in * 1000);
