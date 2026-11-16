@@ -899,6 +899,164 @@
             }
 
             try {
+                const raw = localStorage.getItem(STORAGE_KEY_CONFIG);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed.profile) {
+                        appState.profile = { ...appState.profile, ...parsed.profile };
+                    }
+                    if (Array.isArray(parsed.rencanaAksiList) && parsed.rencanaAksiList.length > 0) {
+                        appState.rencanaAksiList = parsed.rencanaAksiList;
+                    }
+                    if (parsed.drive) {
+                        appState.drive.clientId = parsed.drive.clientId || appState.drive.clientId;
+                        appState.drive.spreadsheetId = parsed.drive.spreadsheetId || '';
+                    }
+                }
+            } catch (e) {
+                console.warn('Gagal memuat konfigurasi lokal:', e);
+            }
+
+            const setNamaEl = document.getElementById('set-nama');
+            const setJabatanEl = document.getElementById('set-jabatan');
+            const headerInfoEl = document.getElementById('header-user-info');
+            if (setNamaEl) setNamaEl.value = appState.profile.nama;
+            if (setJabatanEl) setJabatanEl.value = appState.profile.jabatan;
+            if (headerInfoEl) headerInfoEl.textContent = `${appState.profile.nama} • ${appState.profile.jabatan}`;
+
+            const clientIdInput = document.getElementById('set-client-id');
+            if (clientIdInput && appState.drive.clientId) {
+                clientIdInput.value = appState.drive.clientId;
+            } else if (clientIdInput && clientIdInput.value.trim()) {
+                appState.drive.clientId = clientIdInput.value.trim();
+            }
+
+            const sheetIdInput = document.getElementById('set-spreadsheet-id');
+            if (sheetIdInput && appState.drive.spreadsheetId) {
+                sheetIdInput.value = appState.drive.spreadsheetId;
+            }
+
+            renderRencanaAksiDropdown();
+            renderSettingsRencanaAksiList();
+            updateDriveConnectionUI(false);
+        }
+
+        function saveConfigToLocal() {
+            try {
+                localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify({
+                    profile: appState.profile,
+                    rencanaAksiList: appState.rencanaAksiList,
+                    drive: {
+                        clientId: appState.drive.clientId,
+                        spreadsheetId: appState.drive.spreadsheetId
+                    }
+                }));
+            } catch (e) {
+                console.warn('Gagal menyimpan konfigurasi lokal:', e);
+            }
+        }
+
+        function handleOAuthRedirectCallback() {
+            if (!window.location.hash || !window.location.hash.includes('access_token=')) return;
+            const params = new URLSearchParams(window.location.hash.substring(1));
+            const accessToken = params.get('access_token');
+            const expiresIn = parseInt(params.get('expires_in') || '3600', 10);
+
+            if (accessToken) {
+                appState.drive.accessToken = accessToken;
+                appState.drive.tokenExpiry = Date.now() + (expiresIn * 1000);
+                appState.drive.isLive = true;
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+                updateDriveConnectionUI(true);
+                showToast('Berhasil login Google & terhubung ke Drive + Sheets!', 'success');
+                fetchLogsFromGoogleSheet(true);
+            }
+        }
+
+        function isGoogleConnected() {
+            return Boolean(appState.drive.isLive && appState.drive.accessToken && Date.now() < appState.drive.tokenExpiry);
+        }
+
+        function handleQuickDriveAction() {
+            if (isGoogleConnected()) {
+                switchTab('pengaturan');
+                return;
+            }
+            const cid = (document.getElementById('set-client-id')?.value || appState.drive.clientId || '').trim();
+            if (cid) {
+                appState.drive.clientId = cid;
+                authorizeGoogleDrive();
+            } else {
+                switchTab('pengaturan');
+                showToast('Masukkan OAuth 2.0 Client ID lalu klik Otorisasi.', 'info');
+            }
+        }
+
+        function saveClientIdAndConnect() {
+            const cid = document.getElementById('set-client-id').value.trim();
+            if (!cid) {
+                showToast('Masukkan Google OAuth 2.0 Client ID terlebih dahulu.', 'error');
+                return;
+            }
+            appState.drive.clientId = cid;
+            appState.drive.spreadsheetId = document.getElementById('set-spreadsheet-id').value.trim();
+            saveConfigToLocal();
+            authorizeGoogleDrive();
+        }
+
+        function authorizeGoogleDrive() {
+            const cid = (appState.drive.clientId || document.getElementById('set-client-id')?.value || '').trim();
+            if (!cid) {
+                showToast('Client ID kosong. Silakan isi di tab API Drive.', 'error');
+                switchTab('pengaturan');
+                return;
+            }
+
+            if (!window.google || !google.accounts || !google.accounts.oauth2) {
+                const msg = 'Library Google Identity Services belum selesai dimuat. Periksa koneksi internet lalu coba klik lagi.';
+                document.getElementById('oauth-status-box').innerHTML = `Status: <strong>${msg}</strong>`;
+                showToast(msg, 'error');
+                return;
+            }
+
+            try {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: cid,
+                    scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets',
+                    callback: async (tokenResponse) => {
+                        if (tokenResponse && tokenResponse.error) {
+                            const errMsg = `Error OAuth: ${tokenResponse.error_description || tokenResponse.error}`;
+                            document.getElementById('oauth-status-box').innerHTML = `Gagal Koneksi: <strong>${escapeHtml(errMsg)}</strong>`;
+                            showToast(errMsg, 'error');
+                            return;
+                        }
+                        if (tokenResponse && tokenResponse.access_token) {
+                            appState.drive.accessToken = tokenResponse.access_token;
+                            appState.drive.tokenExpiry = Date.now() + ((tokenResponse.expires_in || 3600) * 1000);
+                            appState.drive.isLive = true;
+                            updateDriveConnectionUI(true);
+                            showToast('Berhasil terhubung ke Google Drive & Google Sheets!', 'success');
+                            await fetchLogsFromGoogleSheet(true);
+                        }
+                    },
+                    error_callback: (err) => {
+                        const errType = err?.type || 'popup_error';
+                        const detail = errType === 'popup_closed'
+                            ? 'Jendela login Google ditutup sebelum selesai.'
+                            : errType === 'popup_failed_to_open'
+                                ? 'Pop-up login diblokir browser. Izinkan pop-up atau gunakan tombol Login Tab Penuh.'
+                                : `Gagal membuka pop-up OAuth (${errType}). Coba tombol Login Tab Penuh.`;
+                        document.getElementById('oauth-status-box').innerHTML = `Gagal Koneksi: <strong>${escapeHtml(detail)}</strong>`;
+                        showToast(detail, 'error');
+                    }
+                });
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            } catch (err) {
+                console.error(err);
+                showToast('Gagal menginisialisasi OAuth Client ID: ' + err.message, 'error');
+            }
+        }
+
         function authorizeViaRedirectFallback() {
             const cid = document.getElementById('set-client-id').value.trim();
             if (!cid) {
@@ -920,6 +1078,35 @@
             window.location.assign(authUrl);
         }
 
+        async function connectWithManualToken() {
+            const token = document.getElementById('manual-access-token').value.trim();
+            if (!token) {
+                showToast('Tempel Access Token terlebih dahulu.', 'error');
+                return;
+            }
+            appState.drive.accessToken = token;
+            appState.drive.tokenExpiry = Date.now() + (3500 * 1000);
+            appState.drive.isLive = true;
+            updateDriveConnectionUI(true);
+            showToast('Token manual aktif! Memuat database Google Sheets...', 'success');
+            await fetchLogsFromGoogleSheet(true);
+        }
+
+        function copyCurrentOrigin() {
+            const origin = window.location.origin;
+            if (!origin || origin === 'null' || window.location.protocol === 'file:') {
+                showToast('Jalankan melalui server HTTP/HTTPS agar Origin URL valid.', 'error');
+                return;
+            }
+            const tempInput = document.createElement('input');
+            tempInput.value = origin;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast(`Origin URL "${origin}" disalin! Tempel di Authorized JavaScript origins.`, 'success');
+        }
+
         function copyCurrentRedirectUri() {
             const redirectUri = window.location.origin + window.location.pathname;
             if (!window.location.origin || window.location.origin === 'null' || window.location.protocol === 'file:') {
@@ -934,33 +1121,82 @@
             document.body.removeChild(tempInput);
             showToast(`Redirect URI "${redirectUri}" disalin! Tempel di Authorized redirect URIs.`, 'success');
         }
-                        if (tokenResponse && tokenResponse.access_token) {
-                            appState.drive.accessToken = tokenResponse.access_token;
-                            appState.drive.tokenExpiry = Date.now() + (tokenResponse.expires_in * 1000);
-                            appState.drive.isLive = true;
-                            updateDriveConnectionUI(true);
-                            showToast('Berhasil terhubung ke Google Drive & Google Sheets!', 'success');
 
-                            // Pastikan file Google Spreadsheet tersedia & muat data dari Google Sheets
-                            await fetchLogsFromGoogleSheet(true);
-                        }
-                    },
-                    error_callback: (err) => {
-                        const errType = err?.type || 'popup_error';
-                        const detail = errType === 'popup_closed'
-                            ? 'Jendela login Google ditutup sebelum selesai.'
-                            : errType === 'popup_failed_to_open'
-                                ? 'Pop-up login diblokir oleh browser. Izinkan pop-up untuk situs ini.'
-                                : `Gagal membuka OAuth (${errType}). Pastikan Origin URL sudah terdaftar di Google Cloud Console.`;
-                        document.getElementById('oauth-status-box').innerHTML = `Gagal Koneksi: <strong>${escapeHtml(detail)}</strong>`;
-                        showToast(detail, 'error');
-                    }
-                });
-                tokenClient.requestAccessToken({ prompt: 'consent' });
-            } catch (err) {
-                console.error(err);
-                showToast('Gagal menginisialisasi OAuth Client ID. Periksa kembali ID Anda.', 'error');
+        function saveProfileSettings() {
+            const nama = document.getElementById('set-nama').value.trim();
+            const jabatan = document.getElementById('set-jabatan').value.trim();
+            if (!nama || !jabatan) {
+                showToast('Nama dan Jabatan tidak boleh kosong.', 'error');
+                return;
             }
+            appState.profile.nama = nama;
+            appState.profile.jabatan = jabatan;
+            document.getElementById('header-user-info').textContent = `${nama} • ${jabatan}`;
+            saveConfigToLocal();
+            refreshWatermarkIfPhotoExists();
+            showToast('Profil pegawai berhasil disimpan!', 'success');
+        }
+
+        function renderRencanaAksiDropdown() {
+            const selectEl = document.getElementById('input-rencana-aksi');
+            if (!selectEl) return;
+            const currentVal = selectEl.value;
+            selectEl.innerHTML = `<option value="">-- Pilih Rencana Aksi (Wajib Dipilih Manual) --</option>` +
+                appState.rencanaAksiList.map(item => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join('');
+            if (currentVal && appState.rencanaAksiList.includes(currentVal)) {
+                selectEl.value = currentVal;
+            }
+        }
+
+        function renderSettingsRencanaAksiList() {
+            const listEl = document.getElementById('settings-rencana-aksi-list');
+            if (!listEl) return;
+            listEl.innerHTML = appState.rencanaAksiList.map((item, idx) => `
+                <div class="flex items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700">
+                    <span class="leading-snug flex-1">${idx + 1}. ${escapeHtml(item)}</span>
+                    <button type="button" onclick="removeRencanaAksiOption(${idx})" class="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 shrink-0" title="Hapus">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            `).join('');
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
+        }
+
+        function addRencanaAksiOption() {
+            const inputEl = document.getElementById('new-rencana-aksi-input');
+            const val = inputEl.value.trim();
+            if (!val) {
+                showToast('Tuliskan nama Rencana Aksi terlebih dahulu.', 'error');
+                return;
+            }
+            appState.rencanaAksiList.push(val);
+            inputEl.value = '';
+            saveConfigToLocal();
+            renderRencanaAksiDropdown();
+            renderSettingsRencanaAksiList();
+            showToast('Rencana Aksi berhasil ditambahkan!', 'success');
+        }
+
+        function removeRencanaAksiOption(index) {
+            if (appState.rencanaAksiList.length <= 1) {
+                showToast('Minimal harus ada 1 pilihan Rencana Aksi.', 'error');
+                return;
+            }
+            appState.rencanaAksiList.splice(index, 1);
+            saveConfigToLocal();
+            renderRencanaAksiDropdown();
+            renderSettingsRencanaAksiList();
+            showToast('Rencana Aksi dihapus.', 'info');
+        }
+
+        function resetDefaultRencanaAksi() {
+            appState.rencanaAksiList = [...DEFAULT_RENCANA_AKSI];
+            saveConfigToLocal();
+            renderRencanaAksiDropdown();
+            renderSettingsRencanaAksiList();
+            showToast('Daftar Rencana Aksi dikembalikan ke bawaan.', 'success');
         }
 
         function disconnectGoogleDrive() {
