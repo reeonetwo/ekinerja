@@ -649,6 +649,12 @@
                         <div>
                             <h3 class="font-display font-bold text-sm text-slate-800 flex items-center gap-2">
                                 <i data-lucide="cloud" class="w-4 h-4 text-blue-600"></i>
+                                Koneksi Google Drive &amp; Google Sheets
+                            </h3>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Hubungkan OAuth 2.0 Client ID untuk menyimpan data ke Google Sheets &amp; Drive.</p>
+                        </div>
+                    </div>
+
                     <div class="bg-blue-50/80 border border-blue-100 rounded-2xl p-3 text-[11px] text-blue-900 space-y-1.5">
                         <p class="font-semibold flex items-center gap-1">
                             <i data-lucide="info" class="w-3.5 h-3.5 text-blue-600"></i> Wajib Daftarkan Origin URL Berikut di Google Cloud:
@@ -661,7 +667,8 @@
                         </div>
                         <ol class="list-decimal pl-4 space-y-0.5 text-blue-800">
                             <li>Buka <strong>Google Cloud Console &gt; APIs &amp; Services &gt; Credentials</strong>.</li>
-                            <li>Edit <strong>OAuth 2.0 Client ID</strong> Anda, lalu tempel URL di atas ke bagian <strong>Authorized JavaScript origins</strong> &amp; klik <strong>Save</strong>.</li>
+                            <li>Edit <strong>OAuth 2.0 Client ID</strong> Anda, lalu tempel URL di atas (<code>https://reeonetwo.github.io</code>) ke bagian <strong>Authorized JavaScript origins</strong>.</li>
+                            <li>Pada <strong>Authorized redirect URIs</strong>, tambahkan URL lengkap halaman Anda (misal: <code>https://reeonetwo.github.io/ekinerja/</code>) lalu klik <strong>Save</strong>.</li>
                             <li>Pastikan <strong>Google Drive API</strong> &amp; <strong>Google Sheets API</strong> berstatus <em>Enabled</em> di menu Library.</li>
                             <li>Jika status OAuth masih <em>Testing</em>, pastikan email Anda terdaftar di <strong>Test users</strong>.</li>
                         </ol>
@@ -847,7 +854,9 @@
         // 2. INISIALISASI SAAT HALAMAN DIMUAT
         // -------------------------------------------------------------------
         window.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
             loadPersistedState();
             handleOAuthRedirectCallback();
             resetCurrentTime();
@@ -980,11 +989,14 @@
             appState.drive.spreadsheetId = document.getElementById('set-spreadsheet-id').value.trim();
             saveConfigToLocal();
 
-            const redirectUri = window.location.origin + window.location.pathname;
+            const cleanPath = window.location.pathname.endsWith('/') || window.location.pathname.endsWith('.html')
+                ? window.location.pathname
+                : window.location.pathname + '/';
+            const redirectUri = window.location.origin + cleanPath;
             const scope = encodeURIComponent('https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets');
             const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(cid)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${scope}&include_granted_scopes=true&prompt=consent`;
 
-            window.open(authUrl, '_top');
+            window.location.assign(authUrl);
         }
 
         async function handleOAuthRedirectCallback() {
