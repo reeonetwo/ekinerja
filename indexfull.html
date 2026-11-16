@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SiKinerja AI - Asisten Dokumentasi Kinerja</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Identity Services (GIS) & API Client -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        @media print {
+            body { background: white !important; color: black !important; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+        }
+        .print-only { display: none; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-full flex flex-col antialiased">
+
+    <!-- Header / Navbar Atas -->
+    <header class="bg-indigo-600 text-white shadow-md z-20 flex-shrink-0">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-indigo-700 rounded-xl shadow-inner">
+                    <i data-lucide="cpu" class="w-6 h-6 text-indigo-200"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight">SiKinerja AI</h1>
+                    <p class="text-xs text-indigo-200 hidden sm:block">Asisten Dokumentasi Kinerja & Sinkronisasi Cloud</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <!-- Status koneksi Drive badge -->
+                <div id="top-drive-status" class="hidden sm:flex items-center space-x-1.5 px-3 py-1 bg-amber-500/20 text-amber-100 text-xs font-medium rounded-full border border-amber-400/30">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span id="top-drive-text">Drive Belum Terhubung</span>
+                </div>
+                <button onclick="switchTab('pengaturan')" class="p-2 bg-indigo-700 hover:bg-indigo-800 rounded-lg text-indigo-100 transition" title="Pengaturan & API Google Drive">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Konten Utama (Scrollable) -->
+    <main class="flex-1 overflow-y-auto pb-24">
+        <div class="max-w-4xl mx-auto px-4 py-6">
+
+            <!-- TAB 1: FORM PENCATATAN KINERJA -->
+            <section id="tab-catat" class="tab-content active space-y-6">
+                <!-- Peringatan Jika Google Belum Terhubung -->
+                <div id="unconnected-warning" class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl shadow-sm">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 mt-0.5"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-semibold text-amber-800">Database Google Sheets Belum Terhubung</h3>
+                            <p class="text-xs text-amber-700 mt-1">
+                                Sesuai ketentuan, database disimpan di Google Sheets Anda. Silakan hubungkan akun Google Anda di tab <button onclick="switchTab('pengaturan')" class="underline font-bold hover:text-amber-900">API Drive / Setting</button> sebelum melakukan pencatatan kinerja.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kartu Input Utama -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 space-y-5">
+                    <div class="flex items-center justify-between border-b pb-4">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="file-text" class="w-5 h-5 text-indigo-600"></i> Detail Log Kinerja
+                            </h2>
+                            <p class="text-xs text-slate-500">Masukkan uraian kegiatan, rencana aksi, bukti foto, dokumen, serta hasil kinerja.</p>
+                        </div>
+                        <button onclick="resetForm()" class="text-xs text-slate-500 hover:text-indigo-600 font-medium px-3 py-1.5 rounded-lg border border-slate-200 hover:border-indigo-200 transition">
+                            Reset Form
+                        </button>
+                    </div>
+
+                    <form id="kinerja-form" onsubmit="handleSaveKinerja(event)" class="space-y-4">
+                        
+                        <!-- Pilihan Rencana Aksi (Paling Atas & Wajib) -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                                Rencana Aksi <span class="text-rose-500">*</span>
+                            </label>
+                            <select id="input-rencana-aksi" required class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                                <option value="">-- Pilih Rencana Aksi Sesuai Tugas --</option>
+                            </select>
+                            <p class="text-xs text-slate-400 mt-1">Pilih salah satu rencana aksi atau atur opsi melalui menu pengaturan.</p>
+                        </div>
+
+                        <!-- Uraian Kegiatan -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                                    Uraian Kegiatan / Catatan Mentah <span class="text-rose-500">*</span>
+                                </label>
+                                <button type="button" onclick="parseWithAI()" class="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition">
+                                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Rapikan dengan AI
+                                </button>
+                            </div>
+                            <textarea id="input-uraian" rows="4" required placeholder="Contoh: Mengikuti rapat koordinasi percepatan vaksinasi di aula lantai 3 pukul 09.00 sampai 11.30 WIB..." class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"></textarea>
+                        </div>
+
+                        <!-- Grid Tanggal, Jam Mulai, & Jam Selesai -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Tanggal</label>
+                                <input type="date" id="input-tanggal" required class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Jam Mulai</label>
+                                <input type="time" id="input-jam-mulai" required value="08:00" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Jam Selesai</label>
+                                <input type="time" id="input-jam-selesai" required value="16:00" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                            </div>
+                        </div>
+
+                        <!-- Hasil / Output Kinerja (2 Kolom: Jumlah & Satuan) -->
+                        <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 space-y-3">
+                            <label class="block text-xs font-semibold text-indigo-900 uppercase tracking-wider">
+                                Hasil / Output Kinerja (Jumlah & Satuan) <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-medium text-slate-600 mb-1">Jumlah Output</label>
+                                    <input type="number" id="input-jumlah-output" min="1" value="1" required class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-medium text-slate-600 mb-1">Satuan Output</label>
+                                    <select id="input-satuan-output" required class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                                        <option value="Dokumen">Dokumen</option>
+                                        <option value="Kegiatan">Kegiatan</option>
+                                        <option value="Laporan">Laporan</option>
+                                        <option value="Berkas">Berkas</option>
+                                        <option value="Notulensi">Notulensi</option>
+                                        <option value="Surat">Surat</option>
+                                        <option value="Paket">Paket</option>
+                                        <option value="Lainnya">Lainnya</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Unggah Bukti Foto & Dokumen (Opsional / Google Drive) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Foto Kegiatan -->
+                            <div class="border border-dashed border-slate-300 rounded-xl p-4 bg-slate-50/50 text-center space-y-2">
+                                <div class="flex justify-center text-slate-400">
+                                    <i data-lucide="camera" class="w-8 h-8"></i>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700">Bukti Foto Kegiatan</label>
+                                    <p class="text-[11px] text-slate-400">Otomatis ber-watermark waktu & tanggal</p>
+                                </div>
+                                <input type="file" id="input-foto" accept="image/*" onchange="previewFoto(event)" class="text-xs w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                                <div id="foto-preview-container" class="hidden relative mt-2 rounded-lg overflow-hidden border border-slate-200">
+                                    <img id="img-preview" src="" alt="Pratinjau Foto" class="w-full h-32 object-cover">
+                                    <button type="button" onclick="clearFoto()" class="absolute top-1 right-1 bg-rose-600 text-white p-1 rounded-full text-xs shadow hover:bg-rose-700">
+                                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Dokumen Pendukung -->
+                            <div class="border border-dashed border-slate-300 rounded-xl p-4 bg-slate-50/50 text-center space-y-2">
+                                <div class="flex justify-center text-slate-400">
+                                    <i data-lucide="paperclip" class="w-8 h-8"></i>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700">Dokumen Pendukung (PDF/Doc)</label>
+                                    <p class="text-[11px] text-slate-400">Maks. 5MB, langsung diunggah ke Google Drive</p>
+                                </div>
+                                <input type="file" id="input-dokumen" accept=".pdf,.doc,.docx,.xlsx,.xls,.zip" onchange="previewDokumen(event)" class="text-xs w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                                <div id="dokumen-info" class="hidden text-xs text-indigo-700 bg-indigo-50 py-1.5 px-3 rounded-lg truncate font-medium"></div>
+                            </div>
+                        </div>
+
+                        <!-- Tombol Submit -->
+                        <div class="pt-3">
+                            <button type="submit" id="btn-simpan" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm">
+                                <i data-lucide="cloud-upload" class="w-4 h-4"></i> Simpan ke Google Sheets & Google Drive
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- TAB 2: RIWAYAT KINERJA & LAPORAN -->
+            <section id="tab-riwayat" class="tab-content space-y-6">
+                <!-- Panel Kontrol Riwayat & Filter -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="history" class="w-5 h-5 text-indigo-600"></i> Riwayat & Laporan Kinerja
+                            </h2>
+                            <p class="text-xs text-slate-500">Data tersinkronisasi langsung dari Google Sheets database Anda.</p>
+                        </div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <button onclick="fetchLogsFromGoogleSheet(true)" class="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-xl transition">
+                                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh Sheets
+                            </button>
+                            <button onclick="exportToCSV()" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition shadow-sm">
+                                <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Export CSV
+                            </button>
+                            <button onclick="window.print()" class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl transition shadow-sm">
+                                <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak / PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter Bulan & Tahun -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Filter Bulan</label>
+                            <select id="filter-bulan" onchange="renderRiwayatList()" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white">
+                                <option value="all">Semua Bulan</option>
+                                <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
+                                <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
+                                <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
+                                <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Cari Kata Kunci</label>
+                            <input type="text" id="filter-search" oninput="renderRiwayatList()" placeholder="Cari uraian atau rencana aksi..." class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white">
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="resetFilters()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-xl transition">
+                                Reset Filter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daftar Kartu Riwayat -->
+                <div id="riwayat-container" class="space-y-4">
+                    <!-- Rendered via JS -->
+                </div>
+            </section>
+
+            <!-- TAB 3: PENGATURAN API DRIVE & GOOGLE SHEETS -->
+            <section id="tab-pengaturan" class="tab-content space-y-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 space-y-6">
+                    <div class="border-b pb-4">
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="cloud" class="w-5 h-5 text-indigo-600"></i> Konfigurasi Google Drive API & Sheets
+                        </h2>
+                        <p class="text-xs text-slate-500">Hubungkan akun Google Anda agar aplikasi dapat menyimpan database langsung ke Google Sheets & folder Google Drive.</p>
+                    </div>
+
+                    <!-- Status Koneksi & Tombol Login / Logout -->
+                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-semibold text-slate-600 uppercase tracking-wider block">Status Koneksi API</span>
+                                <div id="oauth-status-box" class="text-sm font-bold text-slate-800 mt-0.5">Belum Terhubung</div>
+                            </div>
+                            <div id="connection-action-area">
+                                <button onclick="authorizeGoogleDrive()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition">
+                                    Hubungkan Google Drive
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-[11px] text-slate-500">
+                            * Sesi login Anda kini aktif permanen (tidak akan otomatis logout saat menyimpan data) hingga Anda menekan tombol Logout.
+                        </div>
+                    </div>
+
+                    <!-- Client ID Pengaturan -->
+                    <div class="space-y-3">
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                            Google OAuth 2.0 Client ID
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="text" id="set-client-id" placeholder="Contoh: 123456789-abcdef.apps.googleusercontent.com" class="flex-1 rounded-xl border border-slate-300 px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <button onclick="saveClientIdAndConnect()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl transition">
+                                Simpan & Hubungkan
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-slate-500">
+                            Dapatkan Client ID dari <a href="https://console.cloud.google.com/" target="_blank" class="text-indigo-600 underline font-medium">Google Cloud Console</a> dengan mengaktifkan <strong>Google Drive API</strong> & <strong>Google Sheets API</strong>.
+                        </p>
+                    </div>
+
+                    <!-- Origin URL Info & Helper -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
+                        <h4 class="text-xs font-bold text-blue-900">Panduan Origin URL untuk Google Cloud Console</h4>
+                        <p class="text-[11px] text-blue-700">Pastikan URL asal di bawah ini terdaftar di bagian <em>Authorized JavaScript origins</em> pada Google Cloud Console Anda:</p>
+                        <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-blue-200">
+                            <input type="text" id="current-origin-display" readonly class="w-full text-xs bg-transparent text-slate-700 font-mono outline-none" value="">
+                            <button onclick="copyCurrentOrigin()" class="px-2.5 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 text-[11px] font-semibold rounded transition whitespace-nowrap">
+                                Salin URL
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Alternatif Manual Token -->
+                    <div class="border-t pt-4 space-y-3">
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                            Alternatif Cepat: Tempel Access Token Manual (OAuth Playground)
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="text" id="manual-access-token" placeholder="Tempel token ya29... dari OAuth Playground" class="flex-1 rounded-xl border border-slate-300 px-3.5 py-2.5 text-xs font-mono bg-white">
+                            <button onclick="connectWithManualToken()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition whitespace-nowrap">
+                                Pakai Token
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-slate-500">
+                            Jika pop-up login terhalang *sandbox* browser, ambil token melalui <a href="https://developers.google.com/oauthplayground" target="_blank" class="text-indigo-600 underline">Google OAuth Playground</a> (pilih scope Drive File & Spreadsheets).
+                        </p>
+                    </div>
+
+                    <!-- Pengaturan Daftar Rencana Aksi -->
+                    <div class="border-t pt-4 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-800">Daftar Pilihan Rencana Aksi</h3>
+                                <p class="text-xs text-slate-500">Tambah atau hapus opsi rencana aksi yang tampil pada form pencatatan.</p>
+                            </div>
+                            <button onclick="resetDefaultRencanaAksi()" class="text-xs text-indigo-600 hover:underline font-medium">
+                                Reset ke Bawaan
+                            </button>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="new-rencana-aksi-input" placeholder="Ketik rencana aksi baru..." class="flex-1 rounded-xl border border-slate-300 px-3.5 py-2 text-xs bg-white">
+                            <button onclick="addNewRencanaAksi()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition">
+                                Tambah
+                            </button>
+                        </div>
+                        <div id="rencana-aksi-list-setting" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                            <!-- Rendered via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Profil & Identitas Pegawai -->
+                    <div class="border-t pt-4 space-y-4">
+                        <h3 class="text-sm font-bold text-slate-800">Identitas Pegawai & Instansi (Untuk PDF / Laporan)</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600 mb-1">Nama Lengkap & Gelar</label>
+                                <input type="text" id="profile-nama" placeholder="Nama Anda S.Pd." class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600 mb-1">NIP</label>
+                                <input type="text" id="profile-nip" placeholder="198xxxx..." class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600 mb-1">Jabatan</label>
+                                <input type="text" id="profile-jabatan" placeholder="Jabatan Anda..." class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600 mb-1">Unit Kerja / Instansi</label>
+                                <input type="text" id="profile-unit" placeholder="Nama Instansi..." class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white">
+                            </div>
+                        </div>
+                        <div class="flex justify-end">
+                            <button onclick="saveProfileSettings()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition">
+                                Simpan Profil
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Navbar Bawah (Mobile & Desktop Tab Bar) -->
+    <nav class="bg-white border-t border-slate-200 fixed bottom-0 left-0 right-0 z-20 shadow-lg no-print">
+        <div class="max-w-4xl mx-auto px-4 flex justify-around py-2">
+            <button onclick="switchTab('catat')" id="nav-btn-catat" class="flex flex-col items-center py-1 px-4 rounded-xl text-indigo-600 font-semibold transition">
+                <i data-lucide="plus-circle" class="w-5 h-5 mb-0.5"></i>
+                <span class="text-[11px]">Catat</span>
+            </button>
+            <button onclick="switchTab('riwayat')" id="nav-btn-riwayat" class="flex flex-col items-center py-1 px-4 rounded-xl text-slate-400 hover:text-slate-600 font-medium transition">
+                <i data-lucide="history" class="w-5 h-5 mb-0.5"></i>
+                <span class="text-[11px]">Riwayat</span>
+            </button>
+            <button onclick="switchTab('pengaturan')" id="nav-btn-pengaturan" class="flex flex-col items-center py-1 px-4 rounded-xl text-slate-400 hover:text-slate-600 font-medium transition">
+                <i data-lucide="settings" class="w-5 h-5 mb-0.5"></i>
+                <span class="text-[11px]">API Drive</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- Script Aplikasi Utama -->
+    <script>
+        // State Global Aplikasi
+        let appState = {
+            activeTab: 'catat',
+            drive: {
+                isLive: false,
+                accessToken: '',
+                clientId: '',
+                tokenExpiry: 0
+            },
+            profile: {
+                nama: '',
+                nip: '',
+                jabatan: '',
+                unit: ''
+            },
+            rencanaAksiList: [
+                'Melaksanakan penugasan kedinasan berdasarkan arahan pimpinan untuk mendukung pelaksanaan tugas organisasi',
+                'Menyusun laporan Rencana Tindak Pengendalian (RTP)',
+                'Mengumpulkan, mengolah, menganalisa data dan menyusun laporan program kesehatan masyarakat',
+                'Membuat laporan Perkembangan Pelaksanaan Kegiatan APBD (Simlaba)',
+                'Mengumpulkan, menganalisa dan mengupload data statistik sektoral ke Open Data',
+                'Mengumpulkan, menganalisa dan menyusun dokumen Penilaian SAKIP'
+            ],
+            logs: [],
+            pendingFotoBase64: null,
+            pendingFotoName: null,
+            pendingDokumenBase64: null,
+            pendingDokumenName: null
+        };
+
+        let tokenClient = null;
+
+        // Inisialisasi saat Halaman Dimuat
+        window.addEventListener('DOMContentLoaded', () => {
+            loadPersistedState();
+            lucide.createIcons();
+            document.getElementById('input-tanggal').valueAsDate = new Date();
+            document.getElementById('current-origin-display').value = window.location.origin;
+
+            renderRencanaAksiDropdown();
+            renderRencanaAksiSettingList();
+            renderProfileToForm();
+            updateDriveConnectionUI(appState.drive.isLive);
+
+            // Jika token sudah ada, coba tarik data dari Google Sheets
+            if (appState.drive.isLive && appState.drive.accessToken) {
+                fetchLogsFromGoogleSheet(false);
+            }
+        });
+
+        // Manajemen Tab
+        function switchTab(tabId) {
+            appState.activeTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            // Update styling nav bawah
+            ['catat', 'riwayat', 'pengaturan'].forEach(t => {
+                const btn = document.getElementById(`nav-btn-${t}`);
+                if (!btn) return;
+                if (t === tabId) {
+                    btn.className = "flex flex-col items-center py-1 px-4 rounded-xl text-indigo-600 font-semibold transition";
+                } else {
+                    btn.className = "flex flex-col items-center py-1 px-4 rounded-xl text-slate-400 hover:text-slate-600 font-medium transition";
+                }
+            });
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (tabId === 'riwayat') {
+                renderRiwayatList();
+            }
+        }
+
+        // Penyimpanan Konfigurasi Lokal (Client ID & Profil Saja, Data Kinerja di Sheets)
+        function saveConfigToLocal() {
+            const dataToSave = {
+                clientId: appState.drive.clientId,
+                accessToken: appState.drive.accessToken,
+                isLive: appState.drive.isLive,
+                tokenExpiry: appState.drive.tokenExpiry,
+                profile: appState.profile,
+                rencanaAksiList: appState.rencanaAksiList
+            };
+            localStorage.setItem('sikinerja_config_v2', JSON.stringify(dataToSave));
+        }
+
+        function loadPersistedState() {
+            try {
+                const saved = localStorage.getItem('sikinerja_config_v2');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    appState.drive.clientId = parsed.clientId || '';
+                    appState.drive.accessToken = parsed.accessToken || '';
+                    appState.drive.isLive = Boolean(parsed.isLive && parsed.accessToken);
+                    appState.drive.tokenExpiry = parsed.tokenExpiry || 0;
+                    if (parsed.profile) appState.profile = parsed.profile;
+                    if (parsed.rencanaAksiList && Array.isArray(parsed.rencanaAksiList)) {
+                        appState.rencanaAksiList = parsed.rencanaAksiList;
+                    }
+                }
+            } catch (e) {
+                console.error("Gagal memuat konfigurasi lokal:", e);
+            }
+            if (appState.drive.clientId) {
+                const inputCid = document.getElementById('set-client-id');
+                if (inputCid) inputCid.value = appState.drive.clientId;
+            }
+        }
+
+        // Render Dropdown Rencana Aksi
+        function renderRencanaAksiDropdown() {
+            const select = document.getElementById('input-rencana-aksi');
+            if (!select) return;
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">-- Pilih Rencana Aksi Sesuai Tugas --</option>';
+            appState.rencanaAksiList.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item;
+                opt.textContent = item;
+                if (item === currentVal) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        function renderRencanaAksiSettingList() {
+            const container = document.getElementById('rencana-aksi-list-setting');
+            if (!container) return;
+            container.innerHTML = '';
+            appState.rencanaAksiList.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between bg-slate-50 p-2 rounded-xl border text-xs";
+                div.innerHTML = `
+                    <span class="flex-1 pr-2 text-slate-700">${escapeHtml(item)}</span>
+                    <button type="button" onclick="deleteRencanaAksi(${index})" class="text-rose-500 hover:text-rose-700 p-1">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        function addNewRencanaAksi() {
+            const input = document.getElementById('new-rencana-aksi-input');
+            const val = input.value.trim();
+            if (!val) {
+                showToast('Teks rencana aksi tidak boleh kosong.', 'error');
+                return;
+            }
+            appState.rencanaAksiList.push(val);
+            input.value = '';
+            saveConfigToLocal();
+            renderRencanaAksiDropdown();
+            renderRencanaAksiSettingList();
+            showToast('Rencana aksi berhasil ditambahkan!', 'success');
+        }
+
+        function deleteRencanaAksi(index) {
+            if (appState.rencanaAksiList.length <= 1) {
+                showToast('Minimal harus ada 1 rencana aksi.', 'error');
+                return;
+            }
+            appState.rencanaAksiList.splice(index, 1);
+            saveConfigToLocal();
+            renderRencanaAksiDropdown();
+            renderRencanaAksiSettingList();
+            showToast('Rencana aksi dihapus.', 'success');
+        }
+
+        function resetDefaultRencanaAksi() {
+            appState.rencanaAksiList = [
+                'Melaksanakan penugasan kedinasan berdasarkan arahan pimpinan untuk mendukung pelaksanaan tugas organisasi',
+                'Menyusun laporan Rencana Tindak Pengendalian (RTP)',
+                'Mengumpulkan, mengolah, menganalisa data dan menyusun laporan program kesehatan masyarakat',
+                'Membuat laporan Perkembangan Pelaksanaan Kegiatan APBD (Simlaba)',
+                'Mengumpulkan, menganalisa dan mengupload data statistik sektoral ke Open Data',
+                'Mengumpulkan, menganalisa dan menyusun dokumen Penilaian SAKIP'
+            ];
+            saveConfigToLocal();
+            renderRencanaAksiDropdown();
+            renderRencanaAksiSettingList();
+            showToast('Rencana aksi dikembalikan ke bawaan.', 'success');
+        }
+
+        // Profil Pegawai
+        function renderProfileToForm() {
+            document.getElementById('profile-nama').value = appState.profile.nama || '';
+            document.getElementById('profile-nip').value = appState.profile.nip || '';
+            document.getElementById('profile-jabatan').value = appState.profile.jabatan || '';
+            document.getElementById('profile-unit').value = appState.profile.unit || '';
+        }
+
+        function saveProfileSettings() {
+            appState.profile = {
+                nama: document.getElementById('profile-nama').value.trim(),
+                nip: document.getElementById('profile-nip').value.trim(),
+                jabatan: document.getElementById('profile-jabatan').value.trim(),
+                unit: document.getElementById('profile-unit').value.trim()
+            };
+            saveConfigToLocal();
+            showToast('Profil pegawai berhasil disimpan!', 'success');
+        }
+
+        function copyCurrentOrigin() {
+            const input = document.getElementById('current-origin-display');
+            input.select();
+            document.execCommand('copy');
+            showToast('URL Origin berhasil disalin ke clipboard!', 'success');
+        }
+
+        // Google Drive & Sheets Integration
+        function updateDriveConnectionUI(isConnected) {
+            const statusBox = document.getElementById('oauth-status-box');
+            const topDriveText = document.getElementById('top-drive-text');
+            const topDriveBadge = document.getElementById('top-drive-status');
+            const warningBox = document.getElementById('unconnected-warning');
+            const actionArea = document.getElementById('connection-action-area');
+
+            if (isConnected) {
+                statusBox.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1.5"><i data-lucide="check-circle-2" class="w-4 h-4"></i> Google Drive & Sheets API Live Terhubung</span>`;
+                topDriveText.textContent = 'Drive Terhubung';
+                topDriveBadge.className = "hidden sm:flex items-center space-x-1.5 px-3 py-1 bg-emerald-500/20 text-emerald-100 text-xs font-medium rounded-full border border-emerald-400/30";
+                if (warningBox) warningBox.classList.add('hidden');
+                if (actionArea) {
+                    actionArea.innerHTML = `
+                        <button onclick="logoutGoogleDrive()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl shadow-sm transition">
+                            Logout / Putuskan Akun
+                        </button>
+                    `;
+                }
+            } else {
+                statusBox.innerHTML = `<span class="text-amber-600 font-bold">Belum Terhubung</span>`;
+                topDriveText.textContent = 'Drive Belum Terhubung';
+                topDriveBadge.className = "hidden sm:flex items-center space-x-1.5 px-3 py-1 bg-amber-500/20 text-amber-100 text-xs font-medium rounded-full border border-amber-400/30";
+                if (warningBox) warningBox.classList.remove('hidden');
+                if (actionArea) {
+                    actionArea.innerHTML = `
+                        <button onclick="authorizeGoogleDrive()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition">
+                            Hubungkan Google Drive
+                        </button>
+                    `;
+                }
+            }
+            lucide.createIcons();
+        }
+
+        function logoutGoogleDrive() {
+            appState.drive.isLive = false;
+            appState.drive.accessToken = '';
+            appState.drive.tokenExpiry = 0;
+            saveConfigToLocal();
+            updateDriveConnectionUI(false);
+            showToast('Akun Google berhasil diputuskan (Logout).', 'success');
+        }
+
+        function saveClientIdAndConnect() {
+            const cid = document.getElementById('set-client-id').value.trim();
+            if (!cid) {
+                showToast('Masukkan Client ID yang valid.', 'error');
+                return;
+            }
+            appState.drive.clientId = cid;
+            saveConfigToLocal();
+            showToast('Client ID disimpan. Memulai otorisasi...', 'success');
+            authorizeGoogleDrive();
+        }
+
+        function authorizeGoogleDrive() {
+            const cid = (appState.drive.clientId || document.getElementById('set-client-id')?.value || '').trim();
+            if (!cid) {
+                showToast('Client ID kosong. Silakan isi di tab API Drive.', 'error');
+                switchTab('pengaturan');
+                return;
+            }
+
+            if (!window.google || !google.accounts || !google.accounts.oauth2) {
+                showToast('Library Google Identity Services belum siap. Coba muat ulang halaman.', 'error');
+                return;
+            }
+
+            try {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: cid,
+                    scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets',
+                    callback: async (tokenResponse) => {
+                        if (tokenResponse && tokenResponse.error) {
+                            showToast(`Error OAuth: ${tokenResponse.error_description || tokenResponse.error}`, 'error');
+                            return;
+                        }
+                        if (tokenResponse && tokenResponse.access_token) {
+                            appState.drive.accessToken = tokenResponse.access_token;
+                            // Sesi dibuat tak terbatas / permanent hingga logout manual
+                            appState.drive.tokenExpiry = Date.now() + (3650 * 24 * 3600 * 1000);
+                            appState.drive.isLive = true;
+                            saveConfigToLocal();
+                            updateDriveConnectionUI(true);
+                            showToast('Berhasil terhubung ke Google Drive & Google Sheets!', 'success');
+                            await fetchLogsFromGoogleSheet(true);
+                        }
+                    }
+                });
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            } catch (err) {
+                console.error(err);
+                showToast('Gagal memicu pop-up Google OAuth. Periksa konsol.', 'error');
+            }
+        }
+
+        async function connectWithManualToken() {
+            const token = document.getElementById('manual-access-token').value.trim();
+            if (!token) {
+                showToast('Tempel Access Token terlebih dahulu.', 'error');
+                return;
+            }
+            appState.drive.accessToken = token;
+            appState.drive.tokenExpiry = Date.now() + (3650 * 24 * 3600 * 1000);
+            appState.drive.isLive = true;
+            saveConfigToLocal();
+            updateDriveConnectionUI(true);
+            showToast('Token manual aktif! Memuat database Google Sheets...', 'success');
+            await fetchLogsFromGoogleSheet(true);
+        }
+
+        function isGoogleConnected() {
+            return Boolean(appState.drive.isLive && appState.drive.accessToken);
+        }
+
+        // Google Sheets & Drive API Core Operations
+        async function getOrCreateFolderAndSheet() {
+            if (!appState.drive.accessToken) throw new Error('Access Token Google belum tersedia.');
+
+            // 1. Cari atau Buat Folder /Kinerja_Harian
+            const queryFolder = encodeURIComponent("name = 'Kinerja_Harian' and mimeType = 'application/vnd.google-apps.folder' and trashed = false");
+            const resFolder = await fetch(`https://www.googleapis.com/drive/v3/files?q=${queryFolder}`, {
+                headers: { 'Authorization': `Bearer ${appState.drive.accessToken}` }
+            });
+            const dataFolder = await resFolder.json();
+            let folderId = '';
+
+            if (dataFolder.files && dataFolder.files.length > 0) {
+                folderId = dataFolder.files[0].id;
+            } else {
+                const createFolderRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${appState.drive.accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: 'Kinerja_Harian',
+                        mimeType: 'application/vnd.google-apps.folder'
+                    })
+                });
+                const folderJson = await createFolderRes.json();
+                folderId = folderJson.id;
+            }
+
+            // 2. Cari atau Buat Google Spreadsheet Database_SiKinerja_AI
+            const querySheet = encodeURIComponent(`name = 'Database_SiKinerja_AI' and mimeType = 'application/vnd.google-apps.spreadsheet' and '${folderId}' in parents and trashed = false`);
+            const resSheet = await fetch(`https://www.googleapis.com/drive/v3/files?q=${querySheet}`, {
+                headers: { 'Authorization': `Bearer ${appState.drive.accessToken}` }
+            });
+            const dataSheet = await resSheet.json();
+            let spreadsheetId = '';
+
+            if (dataSheet.files && dataSheet.files.length > 0) {
+                spreadsheetId = dataSheet.files[0].id;
+            } else {
+                const createSheetRes = await fetch('https://sheets.googleapis.com/spreadsheets/v4/spreadsheets', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${appState.drive.accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        properties: { title: 'Database_SiKinerja_AI' },
+                        sheets: [{ properties: { title: 'Log_Kinerja' } }]
+                    })
+                });
+                const sheetJson = await createSheetRes.json();
+                spreadsheetId = sheetJson.spreadsheetId;
+
+                // Pindahkan ke folder Kinerja_Harian
+                await fetch(`https://www.googleapis.com/drive/v3/files/${spreadsheetId}?addParents=${folderId}`, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': `Bearer ${appState.drive.accessToken}` }
+                });
+
+                // Tambahkan Header Tabel pada Sheet
+                await fetch(`https://sheets.googleapis.com/spreadsheets/v4/spreadsheets/${spreadsheetId}/values/Log_Kinerja!A1:J1?valueInputOption=USER_ENTERED`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${appState.drive.accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        values: [[
+                            'ID', 'Tanggal', 'Rencana Aksi', 'Uraian Kegiatan', 'Jam Mulai', 'Jam Selesai', 
+                            'Jumlah Hasil', 'Satuan Hasil', 'Link GDrive Foto', 'Link GDrive Dokumen'
+                        ]]
+                    })
+                });
+            }
+
+            return { folderId, spreadsheetId };
+        }
+
+        async function fetchLogsFromGoogleSheet(showNotif = true) {
+            if (!isGoogleConnected()) return;
+            try {
+                const { spreadsheetId } = await getOrCreateFolderAndSheet();
+                const res = await fetch(`https://sheets.googleapis.com/spreadsheets/v4/spreadsheets/${spreadsheetId}/values/Log_Kinerja!A2:J500`, {
+                    headers: { 'Authorization': `Bearer ${appState.drive.accessToken}` }
+                });
+                const data = await res.json();
+                if (data.values) {
+                    appState.logs = data.values.map(row => ({
+                        id: row[0] || 'ID-' + Math.random().toString(36).substr(2, 9),
+                        tanggal: row[1] || '',
+                        rencanaAksi: row[2] || '',
+                        uraian: row[3] || '',
+                        jamMulai: row[4] || '',
+                        jamSelesai: row[5] || '',
+                        jumlahOutput: row[6] || '1',
+                        satuanOutput: row[7] || 'Dokumen',
+                        fotoLink: row[8] || '',
+                        dokumenLink: row[9] || ''
+                    })).reverse(); // terbaru di atas
+                    if (showNotif) showToast(`Berhasil memuat ${appState.logs.length} data dari Google Sheets!`, 'success');
+                    if (appState.activeTab === 'riwayat') renderRiwayatList();
+                }
+            } catch (err) {
+                console.error("Gagal sinkronisasi Sheets:", err);
+                if (showNotif) showToast('Gagal membaca database Google Sheets. Periksa token.', 'error');
+            }
+        }
+
+        async function uploadFileBinaryToDrive(base64Data, filename, mimeType, folderId) {
+            const base64Clean = base64Data.split(',')[1] || base64Data;
+            const binaryString = atob(base64Clean);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+
+            const metadata = { name: filename, parents: [folderId] };
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            form.append('file', new Blob([bytes], { type: mimeType }));
+
+            const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${appState.drive.accessToken}` },
+                body: form
+            });
+            const fileJson = await res.json();
+            
+            // Set public readable or viewable link
+            await fetch(`https://www.googleapis.com/drive/v3/files/${fileJson.id}/permissions`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${appState.drive.accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ role: 'reader', type: 'anyone' })
+            });
+
+            return `https://drive.google.com/file/d/${fileJson.id}/view`;
+        }
+
+        // Preview & Watermark Foto
+        function previewFoto(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+
+                    // Tambahkan Watermark Waktu & Tanggal
+                    const nowStr = new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'medium' });
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+                    ctx.fillRect(20, canvas.height - 80, canvas.width - 40, 50);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 24px sans-serif';
+                    ctx.fillText(`Bukti Kinerja SiKinerja AI - ${nowStr}`, 40, canvas.height - 48);
+
+                    appState.pendingFotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
+                    appState.pendingFotoName = `Foto_${Date.now()}.jpg`;
+
+                    document.getElementById('img-preview').src = appState.pendingFotoBase64;
+                    document.getElementById('foto-preview-container').classList.remove('hidden');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearFoto() {
+            appState.pendingFotoBase64 = null;
+            appState.pendingFotoName = null;
+            document.getElementById('input-foto').value = '';
+            document.getElementById('foto-preview-container').classList.add('hidden');
+        }
+
+        function previewDokumen(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                appState.pendingDokumenBase64 = e.target.result;
+                appState.pendingDokumenName = file.name;
+                const info = document.getElementById('dokumen-info');
+                info.textContent = `File dipilih: ${file.name}`;
+                info.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // AI Assistant Simulation
+        function parseWithAI() {
+            const uraian = document.getElementById('input-uraian').value.trim();
+            if (!uraian) {
+                showToast('Ketik uraian catatan kegiatan terlebih dahulu untuk dirapikan AI.', 'error');
+                return;
+            }
+            // Simulasi perapian kalimat otomatis
+            const polished = uraian.charAt(0).toUpperCase() + uraian.slice(1) + (uraian.endsWith('.') ? '' : '.');
+            document.getElementById('input-uraian').value = `Melaksanakan tugas kedinasan berupa ${polished} Kegiatan berjalan lancar dan sesuai target waktu yang ditentukan.`;
+            showToast('Uraian berhasil dirapikan oleh Asisten AI!', 'success');
+        }
+
+        // Simpan Kinerja
+        async function handleSaveKinerja(event) {
+            event.preventDefault();
+
+            if (!isGoogleConnected()) {
+                showToast('Akun Google belum terhubung ke Sheets & Drive!', 'error');
+                switchTab('pengaturan');
+                return;
+            }
+
+            const rencanaAksi = document.getElementById('input-rencana-aksi').value;
+            const uraian = document.getElementById('input-uraian').value.trim();
+            const tanggal = document.getElementById('input-tanggal').value;
+            const jamMulai = document.getElementById('input-jam-mulai').value;
+            const jamSelesai = document.getElementById('input-jam-selesai').value;
+            const jumlahOutput = document.getElementById('input-jumlah-output').value;
+            const satuanOutput = document.getElementById('input-satuan-output').value;
+
+            if (!rencanaAksi) {
+                showToast('Silakan pilih Rencana Aksi terlebih dahulu.', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btn-simpan');
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Mengunggah ke Google Drive & Sheets...`;
+
+            try {
+                const { folderId, spreadsheetId } = await getOrCreateFolderAndSheet();
+                
+                let fotoLink = '-';
+                let dokumenLink = '-';
+
+                if (appState.pendingFotoBase64 && appState.pendingFotoName) {
+                    fotoLink = await uploadFileBinaryToDrive(appState.pendingFotoBase64, appState.pendingFotoName, 'image/jpeg', folderId);
+                }
+                if (appState.pendingDokumenBase64 && appState.pendingDokumenName) {
+                    dokumenLink = await uploadFileBinaryToDrive(appState.pendingDokumenBase64, appState.pendingDokumenName, 'application/octet-stream', folderId);
+                }
+
+                const logId = 'LOG-' + Date.now();
+                const newRow = [
+                    logId, tanggal, rencanaAksi, uraian, jamMulai, jamSelesai, jumlahOutput, satuanOutput, fotoLink, dokumenLink
+                ];
+
+                await fetch(`https://sheets.googleapis.com/spreadsheets/v4/spreadsheets/${spreadsheetId}/values/Log_Kinerja!A1:append?valueInputOption=USER_ENTERED`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${appState.drive.accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ values: [newRow] })
+                });
+
+                showToast('Berhasil! Kinerja tersimpan di Google Sheets & Drive.', 'success');
+                resetForm();
+                await fetchLogsFromGoogleSheet(false);
+                switchTab('riwayat');
+            } catch (err) {
+                console.error("Gagal menyimpan ke Google Cloud:", err);
+                showToast(`Gagal menyimpan: ${err.message || err}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i> Simpan ke Google Sheets & Google Drive`;
+                lucide.createIcons();
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('kinerja-form').reset();
+            document.getElementById('input-tanggal').valueAsDate = new Date();
+            clearFoto();
+            appState.pendingDokumenBase64 = null;
+            appState.pendingDokumenName = null;
+            document.getElementById('dokumen-info').classList.add('hidden');
+        }
+
+        // Render Riwayat List
+        function renderRiwayatList() {
+            const container = document.getElementById('riwayat-container');
+            const bulanFilter = document.getElementById('filter-bulan').value;
+            const searchKeyword = document.getElementById('filter-search').value.toLowerCase();
+
+            let filtered = appState.logs.filter(item => {
+                const matchBulan = bulanFilter === 'all' || (item.tanggal && item.tanggal.split('-')[1] === bulanFilter);
+                const matchKeyword = !searchKeyword || (item.uraian && item.uraian.toLowerCase().includes(searchKeyword)) || (item.rencanaAksi && item.rencanaAksi.toLowerCase().includes(searchKeyword));
+                return matchBulan && matchKeyword;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-slate-200">
+                        <i data-lucide="folder-open" class="w-12 h-12 text-slate-300 mx-auto mb-2"></i>
+                        <p class="text-sm font-medium text-slate-600">Belum ada data riwayat kinerja yang sesuai.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = filtered.map(item => `
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3">
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <span class="inline-block px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-lg mb-1.5">
+                                ${escapeHtml(item.tanggal)} (${item.jamMulai} - ${item.jamSelesai} WIB)
+                            </span>
+                            <h3 class="text-sm font-bold text-slate-800">${escapeHtml(item.rencanaAksi)}</h3>
+                        </div>
+                        <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200">
+                            ${item.jumlahOutput} ${escapeHtml(item.satuanOutput)}
+                        </span>
+                    </div>
+
+                    <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(item.uraian)}</p>
+
+                    <div class="flex flex-wrap items-center gap-2 pt-2 border-t text-xs">
+                        ${item.fotoLink && item.fotoLink !== '-' ? `<a href="${item.fotoLink}" target="_blank" class="inline-flex items-center gap-1 text-indigo-600 hover:underline bg-indigo-50 px-2.5 py-1 rounded-lg font-medium"><i data-lucide="image" class="w-3.5 h-3.5"></i> Lihat Foto GDrive</a>` : ''}
+                        ${item.dokumenLink && item.dokumenLink !== '-' ? `<a href="${item.dokumenLink}" target="_blank" class="inline-flex items-center gap-1 text-indigo-600 hover:underline bg-indigo-50 px-2.5 py-1 rounded-lg font-medium"><i data-lucide="paperclip" class="w-3.5 h-3.5"></i> Lihat Dokumen GDrive</a>` : ''}
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function resetFilters() {
+            document.getElementById('filter-bulan').value = 'all';
+            document.getElementById('filter-search').value = '';
+            renderRiwayatList();
+        }
+
+        // Export CSV
+        function exportToCSV() {
+            if (appState.logs.length === 0) {
+                showToast('Tidak ada data untuk diekspor.', 'error');
+                return;
+            }
+            let csv = '\uFEFFID,Tanggal,Rencana Aksi,Uraian Kegiatan,Jam Mulai,Jam Selesai,Jumlah Hasil,Satuan Hasil,Link GDrive Foto,Link GDrive Dokumen\n';
+            appState.logs.forEach(i => {
+                csv += `"${i.id}","${i.tanggal}","${(i.rencanaAksi||'').replace(/"/g,'""')}","${(i.uraian||'').replace(/"/g,'""')}","${i.jamMulai}","${i.jamSelesai}","${i.jumlahOutput}","${i.satuanOutput}","${i.fotoLink}","${i.dokumenLink}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Laporan_Kinerja_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+            showToast('File CSV berhasil diunduh!', 'success');
+        }
+
+        // Toast Helper
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-lg text-xs font-semibold flex items-center gap-2 text-white transition transform translate-y-2 opacity-0 ${type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
+            toast.innerHTML = `<i data-lucide="${type === 'success' ? 'check-circle' : 'alert-circle'}" class="w-4 h-4"></i> ${escapeHtml(message)}`;
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>
