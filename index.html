@@ -649,21 +649,21 @@
                         <div>
                             <h3 class="font-display font-bold text-sm text-slate-800 flex items-center gap-2">
                                 <i data-lucide="cloud" class="w-4 h-4 text-blue-600"></i>
-                                Integrasi Google Drive & Google Sheets
-                            </h3>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Hubungkan Google Cloud OAuth Client ID untuk menyimpan database kinerja langsung ke Google Sheets & bukti ke Drive pribadi Anda.</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-blue-50/80 border border-blue-100 rounded-2xl p-3 text-[11px] text-blue-900 space-y-1">
+                    <div class="bg-blue-50/80 border border-blue-100 rounded-2xl p-3 text-[11px] text-blue-900 space-y-1.5">
                         <p class="font-semibold flex items-center gap-1">
-                            <i data-lucide="info" class="w-3.5 h-3.5 text-blue-600"></i> Cara Aktivasi Database Google Sheets:
+                            <i data-lucide="info" class="w-3.5 h-3.5 text-blue-600"></i> Wajib Daftarkan Origin URL Berikut di Google Cloud:
                         </p>
+                        <div class="flex items-center gap-1.5 bg-white border border-blue-200 rounded-xl px-2.5 py-1.5">
+                            <code id="current-origin-display" class="text-[10px] font-mono text-slate-800 truncate flex-1">Memuat origin...</code>
+                            <button type="button" onclick="copyCurrentOrigin()" class="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-semibold shrink-0">
+                                Salin URL
+                            </button>
+                        </div>
                         <ol class="list-decimal pl-4 space-y-0.5 text-blue-800">
-                            <li>Buka Google Cloud Console & aktifkan <strong>Google Drive API</strong> serta <strong>Google Sheets API</strong>.</li>
-                            <li>Buat kredensial <strong>OAuth 2.0 Client ID</strong> (Web Application).</li>
-                            <li>Tambahkan origin URL aplikasi ini ke <em>Authorized JavaScript origins</em>.</li>
-                            <li>Tempel Client ID di bawah lalu klik <strong>Otorisasi Google</strong>.</li>
+                            <li>Buka <strong>Google Cloud Console &gt; APIs &amp; Services &gt; Credentials</strong>.</li>
+                            <li>Edit <strong>OAuth 2.0 Client ID</strong> Anda, lalu tempel URL di atas ke bagian <strong>Authorized JavaScript origins</strong> &amp; klik <strong>Save</strong>.</li>
+                            <li>Pastikan <strong>Google Drive API</strong> &amp; <strong>Google Sheets API</strong> berstatus <em>Enabled</em> di menu Library.</li>
+                            <li>Jika status OAuth masih <em>Testing</em>, pastikan email Anda terdaftar di <strong>Test users</strong>.</li>
                         </ol>
                     </div>
 
@@ -677,7 +677,7 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">ID Google Spreadsheet Database (Opsional - Otomatis Dibuat Jika Kosong)</label>
                         <input type="text" id="set-spreadsheet-id" 
-                            placeholder="Otomatis membuat file Database_SiKinerja_AI di folder Kinerja_Harian" value="1x3XH3E4lBui-7ao412WuBG0Zwsi92M_yzfhe25cx4-w"
+                            placeholder="Otomatis membuat file Database_SiKinerja_AI di folder Kinerja_Harian"
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
 
@@ -685,14 +685,40 @@
                         <button type="button" onclick="saveClientIdAndConnect()" 
                             class="py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition">
                             <i data-lucide="log-in" class="w-4 h-4"></i>
-                            Otorisasi Google
+                            Otorisasi Pop-up
                         </button>
-                        <button type="button" onclick="disconnectGoogleDrive()" 
-                            class="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
-                            <i data-lucide="power-off" class="w-4 h-4"></i>
-                            Putuskan Koneksi
+                        <button type="button" onclick="authorizeViaRedirectFallback()" 
+                            class="py-2.5 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                            <i data-lucide="external-link" class="w-4 h-4"></i>
+                            Login Tab Penuh
                         </button>
                     </div>
+
+                    <button type="button" onclick="disconnectGoogleDrive()" 
+                        class="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                        <i data-lucide="power-off" class="w-4 h-4"></i>
+                        Putuskan Koneksi
+                    </button>
+
+                    <!-- Opsi Alternatif Khusus Pengujian di Dalam Iframe Pratinjau -->
+                    <details class="pt-2 border-t border-slate-100">
+                        <summary class="text-[11px] font-semibold text-slate-500 cursor-pointer hover:text-brand-600">
+                            Alternatif Pratinjau Iframe: Tempel Access Token Manual (OAuth Playground)
+                        </summary>
+                        <div class="mt-2 space-y-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                            <p class="text-[10px] text-slate-600 leading-relaxed">
+                                Jika jendela pop-up Google diblokir oleh sandbox pratinjau editor, Anda dapat mengambil Access Token sementara dari <strong>developers.google.com/oauthplayground</strong> (pilih scope <code>drive.file</code> &amp; <code>spreadsheets</code>) lalu tempel di bawah ini:
+                            </p>
+                            <div class="flex gap-1.5">
+                                <input type="password" id="manual-access-token" placeholder="ya29.a0..."
+                                    class="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-800">
+                                <button type="button" onclick="connectWithManualToken()"
+                                    class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-semibold shrink-0">
+                                    Pakai Token
+                                </button>
+                            </div>
+                        </div>
+                    </details>
 
                     <div id="oauth-status-box" class="text-[11px] p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700">
                         Status saat ini: <strong>Belum Terhubung</strong> (Database Google Sheets wajib terhubung untuk mencatat kinerja).
@@ -823,6 +849,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             loadPersistedState();
+            handleOAuthRedirectCallback();
             resetCurrentTime();
             updateFolderPreview();
             initSpeechRecognition();
@@ -832,39 +859,147 @@
         });
 
         function updateStatusClock() {
+            const clockEl = document.getElementById('status-clock');
+            if (!clockEl) return;
             const now = new Date();
             const hh = String(now.getHours()).padStart(2, '0');
             const mm = String(now.getMinutes()).padStart(2, '0');
-            const clockEl = document.getElementById('status-clock');
-            if (clockEl) clockEl.textContent = `${hh}:${mm}`;
+            clockEl.textContent = `${hh}:${mm}`;
         }
 
         function loadPersistedState() {
-            try {
-                // Bersihkan sisa cache database lokal lama jika pernah ada
-                localStorage.removeItem('sikinerja_ai_logs_v1');
+            const originEl = document.getElementById('current-origin-display');
+            if (originEl) {
+                originEl.textContent = window.location.origin || 'null';
+            }
 
-                const savedConfig = JSON.parse(localStorage.getItem(STORAGE_KEY_CONFIG));
-                if (savedConfig) {
-                    if (savedConfig.profile) appState.profile = savedConfig.profile;
-                    if (savedConfig.clientId) appState.drive.clientId = savedConfig.clientId;
-                    if (savedConfig.spreadsheetId) appState.drive.spreadsheetId = savedConfig.spreadsheetId;
-                    if (Array.isArray(savedConfig.rencanaAksiList) && savedConfig.rencanaAksiList.length > 0) {
-                        appState.rencanaAksiList = savedConfig.rencanaAksiList;
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY_CONFIG);
+                if (raw) {
+                    const saved = JSON.parse(raw);
+                    if (saved.profile) {
+                        appState.profile = { ...appState.profile, ...saved.profile };
+                    }
+                    if (saved.clientId) {
+                        appState.drive.clientId = saved.clientId;
+                    }
+                    if (saved.spreadsheetId) {
+                        appState.drive.spreadsheetId = saved.spreadsheetId;
+                    }
+                    if (Array.isArray(saved.rencanaAksiList) && saved.rencanaAksiList.length > 0) {
+                        appState.rencanaAksiList = saved.rencanaAksiList;
                     }
                 }
-
-                document.getElementById('set-nama').value = appState.profile.nama;
-                document.getElementById('set-jabatan').value = appState.profile.jabatan;
-                const defaultCid = '556526035426-t2vnmgcdnhccmcmddggr6mgdhh1j4s0m.apps.googleusercontent.com';
-                if (!appState.drive.clientId) appState.drive.clientId = defaultCid;
-                document.getElementById('set-client-id').value = appState.drive.clientId;
-                document.getElementById('set-spreadsheet-id').value = appState.drive.spreadsheetId || '';
-                updateHeaderProfileUI();
-                renderRencanaAksiOptions();
-                updateDriveConnectionUI(false);
             } catch (e) {
-                console.error('Gagal memuat konfigurasi:', e);
+                console.warn('Gagal membaca konfigurasi tersimpan:', e);
+            }
+
+            const clientIdInput = document.getElementById('set-client-id');
+            if (clientIdInput) {
+                if (appState.drive.clientId) {
+                    clientIdInput.value = appState.drive.clientId;
+                } else if (clientIdInput.value.trim()) {
+                    appState.drive.clientId = clientIdInput.value.trim();
+                }
+            }
+
+            const sheetIdInput = document.getElementById('set-spreadsheet-id');
+            if (sheetIdInput && appState.drive.spreadsheetId) {
+                sheetIdInput.value = appState.drive.spreadsheetId;
+            }
+
+            const namaInput = document.getElementById('set-nama');
+            const jabatanInput = document.getElementById('set-jabatan');
+            if (namaInput) namaInput.value = appState.profile.nama;
+            if (jabatanInput) jabatanInput.value = appState.profile.jabatan;
+
+            updateHeaderProfileUI();
+            renderRencanaAksiOptions();
+            updateDriveConnectionUI(false);
+        }
+
+        async function connectWithManualToken() {
+            const tokenInput = document.getElementById('manual-access-token');
+            const token = tokenInput?.value.trim();
+            if (!token) {
+                showToast('Masukkan Access Token terlebih dahulu.', 'error');
+                return;
+            }
+            appState.drive.accessToken = token;
+            appState.drive.tokenExpiry = Date.now() + (55 * 60 * 1000);
+            appState.drive.isLive = true;
+            updateDriveConnectionUI(true);
+            showToast('Terhubung menggunakan Access Token manual!', 'success');
+            await fetchLogsFromGoogleSheet(false);
+        }
+
+        function isGoogleConnected() {
+            return Boolean(appState.drive.isLive && appState.drive.accessToken && Date.now() < appState.drive.tokenExpiry);
+        }
+
+        function handleQuickDriveAction() {
+            if (isGoogleConnected()) {
+                switchTab('pengaturan');
+                return;
+            }
+            const cid = (document.getElementById('set-client-id')?.value || appState.drive.clientId || '').trim();
+            if (!cid) {
+                switchTab('pengaturan');
+                showToast('Masukkan Google OAuth 2.0 Client ID terlebih dahulu.', 'info');
+                return;
+            }
+            appState.drive.clientId = cid;
+            saveConfigToLocal();
+            authorizeGoogleDrive();
+        }
+
+        function saveClientIdAndConnect() {
+            const cid = document.getElementById('set-client-id').value.trim();
+            const sid = document.getElementById('set-spreadsheet-id').value.trim();
+            if (!cid) {
+                showToast('Google OAuth 2.0 Client ID tidak boleh kosong!', 'error');
+                return;
+            }
+            appState.drive.clientId = cid;
+            appState.drive.spreadsheetId = sid;
+            saveConfigToLocal();
+            authorizeGoogleDrive();
+        }
+
+        function authorizeViaRedirectFallback() {
+            const cid = document.getElementById('set-client-id').value.trim();
+            if (!cid) {
+                showToast('Masukkan Google OAuth 2.0 Client ID terlebih dahulu.', 'error');
+                return;
+            }
+            if (window.location.protocol === 'file:' || window.location.origin === 'null') {
+                showToast('Tidak dapat login dari protokol file://. Jalankan melalui server HTTP/HTTPS.', 'error');
+                return;
+            }
+            appState.drive.clientId = cid;
+            appState.drive.spreadsheetId = document.getElementById('set-spreadsheet-id').value.trim();
+            saveConfigToLocal();
+
+            const redirectUri = window.location.origin + window.location.pathname;
+            const scope = encodeURIComponent('https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets');
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(cid)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${scope}&include_granted_scopes=true&prompt=consent`;
+
+            window.open(authUrl, '_top');
+        }
+
+        async function handleOAuthRedirectCallback() {
+            if (!window.location.hash || !window.location.hash.includes('access_token=')) return;
+            const params = new URLSearchParams(window.location.hash.substring(1));
+            const token = params.get('access_token');
+            const expiresIn = parseInt(params.get('expires_in') || '3600', 10);
+            if (token) {
+                appState.drive.accessToken = token;
+                appState.drive.tokenExpiry = Date.now() + (expiresIn * 1000);
+                appState.drive.isLive = true;
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+                updateDriveConnectionUI(true);
+                showToast('Berhasil terhubung ke Google Drive & Google Sheets!', 'success');
+                await fetchLogsFromGoogleSheet(true);
             }
         }
 
@@ -956,45 +1091,34 @@
             saveConfigToLocal();
             updateHeaderProfileUI();
             refreshWatermarkIfPhotoExists();
-            showToast('Profil pegawai berhasil diperbarui!', 'success');
+            showToast('Profil pegawai berhasil disimpan!', 'success');
         }
 
-        // -------------------------------------------------------------------
-        // 8. INTEGRASI NYATA GOOGLE IDENTITY SERVICES (GIS), DRIVE & SHEETS API
-        // -------------------------------------------------------------------
-        function isGoogleConnected() {
-            return Boolean(appState.drive.isLive && appState.drive.accessToken && Date.now() < appState.drive.tokenExpiry);
-        }
-
-        function handleQuickDriveAction() {
-            if (isGoogleConnected()) {
-                showToast('Sudah terhubung dengan Google Drive & Google Sheets!', 'success');
-            } else if (appState.drive.clientId) {
-                authorizeGoogleDrive();
-            } else {
-                switchTab('pengaturan');
-                showToast('Masukkan Google OAuth Client ID Anda untuk menghubungkan Google Sheets.', 'error');
-            }
-        }
-
-        function saveClientIdAndConnect() {
-            const clientId = document.getElementById('set-client-id').value.trim();
-            const customSheetId = document.getElementById('set-spreadsheet-id').value.trim();
-            if (!clientId) {
-                showToast('Harap isi Google OAuth Client ID terlebih dahulu.', 'error');
+        function copyCurrentOrigin() {
+            const origin = window.location.origin;
+            if (!origin || origin === 'null' || window.location.protocol === 'file:') {
+                showToast('Aplikasi dibuka dari file lokal (file://). Jalankan melalui server HTTP/HTTPS agar OAuth Google berfungsi.', 'error');
                 return;
             }
-            appState.drive.clientId = clientId;
-            if (customSheetId) {
-                appState.drive.spreadsheetId = customSheetId;
-            }
-            saveConfigToLocal();
-            authorizeGoogleDrive();
+            const tempInput = document.createElement('input');
+            tempInput.value = origin;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast(`Origin "${origin}" disalin! Tempel di Authorized JavaScript origins.`, 'success');
         }
 
         function authorizeGoogleDrive() {
+            if (window.location.protocol === 'file:' || window.location.origin === 'null') {
+                const msg = 'Google OAuth tidak mengizinkan protokol file://. Jalankan file HTML ini melalui web server (localhost / HTTPS).';
+                document.getElementById('oauth-status-box').innerHTML = `Gagal Koneksi: <strong>${msg}</strong>`;
+                showToast(msg, 'error');
+                return;
+            }
+
             if (!window.google || !google.accounts || !google.accounts.oauth2) {
-                showToast('Library Google Identity Services sedang dimuat, coba sesaat lagi.', 'error');
+                showToast('Library Google Identity Services sedang dimuat atau diblokir browser, coba sesaat lagi.', 'error');
                 return;
             }
 
@@ -1003,6 +1127,12 @@
                     client_id: appState.drive.clientId,
                     scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets',
                     callback: async (tokenResponse) => {
+                        if (tokenResponse && tokenResponse.error) {
+                            const errMsg = `${tokenResponse.error}: ${tokenResponse.error_description || 'Akses ditolak oleh Google.'}`;
+                            document.getElementById('oauth-status-box').innerHTML = `Error OAuth Google: <strong>${escapeHtml(errMsg)}</strong>`;
+                            showToast(`OAuth Error: ${errMsg}`, 'error');
+                            return;
+                        }
                         if (tokenResponse && tokenResponse.access_token) {
                             appState.drive.accessToken = tokenResponse.access_token;
                             appState.drive.tokenExpiry = Date.now() + (tokenResponse.expires_in * 1000);
@@ -1014,6 +1144,16 @@
                             await fetchLogsFromGoogleSheet(true);
                         }
                     },
+                    error_callback: (err) => {
+                        const errType = err?.type || 'popup_error';
+                        const detail = errType === 'popup_closed'
+                            ? 'Jendela login Google ditutup sebelum selesai.'
+                            : errType === 'popup_failed_to_open'
+                                ? 'Pop-up login diblokir oleh browser. Izinkan pop-up untuk situs ini.'
+                                : `Gagal membuka OAuth (${errType}). Pastikan Origin URL sudah terdaftar di Google Cloud Console.`;
+                        document.getElementById('oauth-status-box').innerHTML = `Gagal Koneksi: <strong>${escapeHtml(detail)}</strong>`;
+                        showToast(detail, 'error');
+                    }
                 });
                 tokenClient.requestAccessToken({ prompt: 'consent' });
             } catch (err) {
