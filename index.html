@@ -13,8 +13,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
     <!-- Google Identity Services (GIS) -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -553,9 +553,12 @@
                 renderHistoryList();
             }
 
-            if (window.lucide && typeof lucide.createIcons === 'function') {
-                lucide.createIcons();
-            }
+            // Inisialisasi ikon Lucide dengan aman
+            setTimeout(() => {
+                if (window.lucide && typeof lucide.createIcons === 'function') {
+                    lucide.createIcons();
+                }
+            }, 100);
         });
 
         function init24HourTimeSelectors() {
@@ -729,6 +732,13 @@
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabName}`).classList.remove('hidden');
             if (tabName === 'riwayat') renderHistoryList();
+            
+            // Render ulang ikon saat tab berganti
+            setTimeout(() => {
+                if (window.lucide && typeof lucide.createIcons === 'function') {
+                    lucide.createIcons();
+                }
+            }, 50);
         }
 
         function getTodayDateString() {
@@ -1005,6 +1015,12 @@
                     <div class="text-[10px] text-slate-500">Output: ${item.hasilJumlah} ${item.hasilSatuan}</div>
                 </div>
             `).join('');
+
+            setTimeout(() => {
+                if (window.lucide && typeof lucide.createIcons === 'function') {
+                    lucide.createIcons();
+                }
+            }, 50);
         }
 
         function clearDateFilter() { renderHistoryList(); }
