@@ -1269,6 +1269,151 @@
             if (dEl) dEl.textContent = `${info.date}/`;
         }
 
+        function showLoadingOverlay(title, stepText, pct) {
+            const overlay = document.getElementById('upload-overlay');
+            const titleEl = document.getElementById('upload-overlay-title');
+            const stepEl = document.getElementById('upload-overlay-step');
+            const barEl = document.getElementById('upload-progress-bar');
+            const pctEl = document.getElementById('upload-progress-pct');
+
+            if (titleEl) titleEl.textContent = title;
+            if (stepEl) stepEl.textContent = stepText;
+            if (barEl) barEl.style.width = `${pct}%`;
+            if (pctEl) pctEl.textContent = `${pct}%`;
+            if (overlay) overlay.classList.remove('hidden');
+        }
+
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('upload-overlay');
+            if (overlay) overlay.classList.add('hidden');
+        }
+
+        async function findOrCreateFolder(token, folderName, parentId = 'root') {
+            const query = `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
+            const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.files && data.files.length > 0) {
+                return data.files[0].id;
+            }
+
+            const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: folderName,
+                    mimeType: 'application/vnd.google-apps.folder',
+                    parents: [parentId]
+                })
+            });
+            const created = await createRes.json();
+            return created.id;
+        }
+
+        async function ensureDriveFolderHierarchy(token, dateStr) {
+            const info = buildFolderPathInfo(dateStr);
+            const rootId = await findOrCreateFolder(token, info.root, 'root');
+            const yearId = await findOrCreateFolder(token, info.year, rootId);
+            const monthId = await findOrCreateFolder(token, info.month, yearId);
+            const dateId = await findOrCreateFolder(token, info.date, monthId);
+
+            const folderRes = await fetch(`https://www.googleapis.com/drive/v3/files/${dateId}?fields=webViewLink`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const folderData = await folderRes.json();
+
+            return {
+                folderId: dateId,
+                folderPath: info.fullPath,
+                folderUrl: folderData.webViewLink || `https://drive.google.com/drive/folders/${dateId}`
+            };
+        }
+
+        async function uploadFileToDrive(token, fileOrBlob, filename, mimeType, folderId) {
+            const metadata = { name: filename, parents: [folderId] };
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            form.append('file', fileOrBlob, filename);
+
+            const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: form
+            });
+            const data = await res.json();
+            return {
+                fileId: data.id,
+                fileUrl: data.webViewLink || `https://drive.google.com/file/d/${data.id}/view`
+            };
+        }
+
+        function handlePhotoSelected(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            appState.currentPhoto.rawFile = file;
+            applyWatermarkToPhoto(file);
+        }
+
+        function refreshWatermarkIfPhotoExists() {
+            if (appState.currentPhoto.rawFile) {
+                applyWatermarkToPhoto(appState.currentPhoto.rawFile);
+            }
+        }
+
+        function applyWatermarkToPhoto(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.getElementById('watermark-canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+
+                    const tanggal = document.getElementById('input-tanggal').value;
+                    const kegiatan = document.getElementById('input-kegiatan').value || 'Kegiatan Kinerja';
+                    
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+                    ctx.fillRect(0, canvas.height - 110, canvas.width, 110);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 28px sans-serif';
+                    ctx.fillText(`${tanggal} • ${appState.profile.nama}`, 30, canvas.height - 65);
+                    ctx.font = '22px sans-serif';
+                    ctx.fillText(kegiatan.substring(0, 60), 30, canvas.height - 25);
+
+                    appState.currentPhoto.watermarkedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                    canvas.toBlob((blob) => {
+                        appState.currentPhoto.watermarkedBlob = blob;
+                        appState.currentPhoto.filename = `Bukti_${tanggal}_${Date.now()}.jpg`;
+                        document.getElementById('watermarked-preview-img').src = appState.currentPhoto.watermarkedDataUrl;
+                        document.getElementById('photo-preview-container').classList.remove('hidden');
+                        document.getElementById('photo-upload-buttons').classList.add('hidden');
+                    }, 'image/jpeg', 0.85);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removePhoto() {
+            appState.currentPhoto = { rawFile: null, watermarkedDataUrl: null, watermarkedBlob: null, filename: '' };
+            document.getElementById('photo-preview-container').classList.add('hidden');
+            document.getElementById('photo-upload-buttons').classList.remove('hidden');
+            const camInput = document.getElementById('photo-camera-input');
+            const galInput = document.getElementById('photo-gallery-input');
+            if (camInput) camInput.value = '';
+            if (galInput) galInput.value = '';
+        }
+
+        function handleDocSelected(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            appState.currentDoc = { rawFile: file, filename: file.name };
+            document.getElementById('doc-filename-display').textContent = file.name;
+        }
+
         async function ensureDatabaseSpreadsheet() {
             const token = appState.drive.accessToken;
             if (appState.drive.spreadsheetId) return appState.drive.spreadsheetId;
@@ -1362,7 +1507,6 @@
                 showLoadingOverlay('Menyiapkan Penyimpanan', 'Memeriksa folder Google Drive...', 20);
                 const token = appState.drive.accessToken;
 
-                // 1. Buat folder hierarki
                 showLoadingOverlay('Membuat Struktur Folder', 'Membuat folder /Kinerja_Harian/Tahun/Bulan/Tanggal/...', 45);
                 const folderInfo = await ensureDriveFolderHierarchy(token, tanggal);
 
