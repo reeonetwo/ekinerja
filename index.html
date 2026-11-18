@@ -439,10 +439,20 @@
                 </div>
 
                 <div class="bg-white p-3.5 rounded-3xl shadow-android border border-slate-100 space-y-3 no-print">
-                    <div class="flex items-center gap-1.5">
-                        <input type="date" id="filter-tanggal" onchange="renderHistoryList()" 
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-700">
-                        <button type="button" onclick="clearDateFilter()" class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold">Semua</button>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">Tanggal Awal</label>
+                            <input type="date" id="filter-tanggal-awal" onchange="renderHistoryList()" 
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-700">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">Tanggal Akhir</label>
+                            <input type="date" id="filter-tanggal-akhir" onchange="renderHistoryList()" 
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-700">
+                        </div>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="button" onclick="clearDateFilter()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold transition">Reset Filter Tanggal</button>
                     </div>
                     <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
                         <button type="button" onclick="exportToCSV()" class="py-2 px-3 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-semibold flex items-center justify-center gap-1.5">
@@ -452,9 +462,9 @@
                             <i data-lucide="printer" class="w-4 h-4"></i> Cetak PDF
                         </button>
                     </div>
-                    <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
-                        <span id="sheet-db-info-label" class="text-[11px] text-slate-600 truncate">Database: Belum terhubung</span>
-                        <button type="button" onclick="fetchLogsFromGoogleSheet(false)" class="px-3 py-1.5 rounded-xl bg-blue-600 text-white text-[11px] font-semibold">Muat Sheet</button>
+                    <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <span id="sheet-db-info-label" class="text-[11px] font-medium text-slate-600 truncate">Database: Belum terhubung</span>
+                        <button type="button" onclick="fetchLogsFromGoogleSheet(false)" class="shrink-0 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold transition">Muat Ulang</button>
                     </div>
                 </div>
 
@@ -673,7 +683,8 @@
             document.getElementById('set-jabatan').value = appState.profile.jabatan;
             document.getElementById('header-user-info').textContent = `${appState.profile.nama} • ${appState.profile.jabatan}`;
             if (appState.drive.clientId) document.getElementById('set-client-id').value = appState.drive.clientId;
-            if (appState.drive.spreadsheetId) document.getElementById('set-spreadsheet-id').value = appState.drive.spreadsheetId;
+            const sheetInputEl = document.getElementById('set-spreadsheet-id');
+            if (sheetInputEl && appState.drive.spreadsheetId) sheetInputEl.value = appState.drive.spreadsheetId;
 
             renderRencanaAksiDropdown();
         }
@@ -788,18 +799,32 @@
         }
 
         function clearDateFilter() {
-            const filterEl = document.getElementById('filter-tanggal');
-            if (filterEl) filterEl.value = '';
+            const awalEl = document.getElementById('filter-tanggal-awal');
+            const akhirEl = document.getElementById('filter-tanggal-akhir');
+            if (awalEl) awalEl.value = '';
+            if (akhirEl) akhirEl.value = '';
             renderHistoryList();
         }
 
+        function getFilteredLogs() {
+            const awal = document.getElementById('filter-tanggal-awal')?.value || '';
+            const akhir = document.getElementById('filter-tanggal-akhir')?.value || '';
+            return appState.logs.filter(item => {
+                if (!item.tanggal) return false;
+                if (awal && item.tanggal < awal) return false;
+                if (akhir && item.tanggal > akhir) return false;
+                return true;
+            });
+        }
+
         function exportToCSV() {
-            if (!appState.logs || appState.logs.length === 0) {
-                showToast('Belum ada data untuk diekspor.', 'error');
+            const filtered = getFilteredLogs();
+            if (!filtered || filtered.length === 0) {
+                showToast('Belum ada data pada rentang tanggal tersebut untuk diekspor.', 'error');
                 return;
             }
             const headers = ['Tanggal', 'Jam Mulai', 'Jam Selesai', 'Durasi', 'Rencana Aksi', 'Kategori', 'Uraian Kegiatan', 'Jumlah', 'Satuan', 'Link Foto', 'Link Dokumen'];
-            const rows = appState.logs.map(l => [
+            const rows = filtered.map(l => [
                 l.tanggal, l.jamMulai, l.jamSelesai, l.durasiText,
                 `"${(l.rencanaAksi || '').replace(/"/g, '""')}"`,
                 `"${(l.kategori || '').replace(/"/g, '""')}"`,
@@ -1097,6 +1122,7 @@
             const btn = document.getElementById('header-connect-btn');
             const statusBox = document.getElementById('oauth-status-box');
             const banner = document.getElementById('connection-warning-banner');
+            const sheetDbLabel = document.getElementById('sheet-db-info-label');
 
             if (isLive) {
                 dot.className = 'absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-brand-700';
@@ -1107,6 +1133,10 @@
                 statusBox.className = 'text-[11px] p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800';
                 statusBox.innerHTML = 'Status: <strong>TERHUBUNG</strong>';
                 if (banner) banner.classList.add('hidden');
+                if (sheetDbLabel) {
+                    sheetDbLabel.className = 'text-[11px] font-semibold text-emerald-700 truncate';
+                    sheetDbLabel.textContent = `Database: Terhubung (${SPREADSHEET_FILE_NAME})`;
+                }
             } else {
                 dot.className = 'absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-rose-500 border-2 border-brand-700';
                 badge.textContent = 'Belum Terhubung ke Google';
@@ -1116,13 +1146,45 @@
                 statusBox.className = 'text-[11px] p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700';
                 statusBox.innerHTML = 'Status: <strong>Belum Terhubung</strong>';
                 if (banner) banner.classList.remove('hidden');
+                if (sheetDbLabel) {
+                    sheetDbLabel.className = 'text-[11px] font-medium text-rose-600 truncate';
+                    sheetDbLabel.textContent = 'Database: Belum terhubung';
+                }
             }
         }
 
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-            if (tabName === 'riwayat') renderHistoryList();
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-brand-600');
+                btn.classList.add('text-slate-500');
+                const pill = btn.querySelector('.nav-pill');
+                if (pill) {
+                    pill.classList.remove('bg-brand-100');
+                    pill.classList.add('bg-transparent');
+                }
+            });
+            const activeBtn = document.getElementById(`nav-${tabName}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-500');
+                activeBtn.classList.add('text-brand-600');
+                const activePill = activeBtn.querySelector('.nav-pill');
+                if (activePill) {
+                    activePill.classList.remove('bg-transparent');
+                    activePill.classList.add('bg-brand-100');
+                }
+            }
+
+            if (tabName === 'riwayat') {
+                updateDriveConnectionUI(isGoogleConnected());
+                if (isGoogleConnected()) {
+                    fetchLogsFromGoogleSheet(true);
+                } else {
+                    renderHistoryList();
+                }
+            }
             
             // Render ulang ikon saat tab berganti
             setTimeout(() => {
@@ -1201,17 +1263,25 @@
             const sheetData = await sheetRes.json();
             if (sheetData.files?.[0]) {
                 appState.drive.spreadsheetId = sheetData.files[0].id;
+                saveConfigToLocalStorage();
                 return appState.drive.spreadsheetId;
             }
 
             const newSheet = await fetch('https://www.googleapis.com/drive/v3/files', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: SPREADSHEET_FILE_NAME, mimeType: 'application/vnd.google-apps.spreadsheet', parents: [rootId] })
+                body: JSON.stringify({
+                    name: SPREADSHEET_FILE_NAME,
+                    mimeType: 'application/vnd.google-apps.spreadsheet',
+                    parents: [rootId],
+                    sheets: [{ properties: { title: SHEET_TAB_NAME } }]
+                })
             });
             const sheetObj = await newSheet.json();
             appState.drive.spreadsheetId = sheetObj.id;
-            document.getElementById('set-spreadsheet-id').value = sheetObj.id;
+            saveConfigToLocalStorage();
+            const sheetInputEl = document.getElementById('set-spreadsheet-id');
+            if (sheetInputEl) sheetInputEl.value = sheetObj.id;
 
             await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetObj.id}/values/${encodeURIComponent(SHEET_TAB_NAME + '!A1:S1')}?valueInputOption=USER_ENTERED`, {
                 method: 'PUT',
@@ -1233,177 +1303,127 @@
         }
 
         async function fetchLogsFromGoogleSheet(isSilent = false) {
-            if (!isGoogleConnected()) return;
+            if (!isGoogleConnected()) {
+                updateDriveConnectionUI(false);
+                if (!isSilent) showToast('Hubungkan akun Google terlebih dahulu.', 'error');
+                return;
+            }
+            const sheetDbLabel = document.getElementById('sheet-db-info-label');
+            if (sheetDbLabel) sheetDbLabel.textContent = 'Database: Memuat data dari Sheet...';
+
             try {
                 const token = appState.drive.accessToken;
                 const sheetId = await ensureDatabaseSpreadsheet();
-                const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(SHEET_TAB_NAME + '!A2:S')}`, {
+                let res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(SHEET_TAB_NAME + '!A2:S')}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
+
+                // Fallback jika tab masih bernama Sheet1
+                if (!res.ok && res.status === 400) {
+                    res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent('Sheet1!A2:S')}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                }
+
+                if (res.status === 401) {
+                    appState.drive.accessToken = null;
+                    appState.drive.isLive = false;
+                    localStorage.removeItem('sikinerja_permanent_token');
+                    updateDriveConnectionUI(false);
+                    if (!isSilent) showToast('Sesi Google berakhir, silakan hubungkan ulang.', 'error');
+                    return;
+                }
+
                 const data = await res.json();
-                appState.logs = (data.values || []).map((r, i) => ({
-                    id: r[0] || `row-${i}`, tanggal: r[1], jamMulai: r[2], jamSelesai: r[3], durasiMenit: parseInt(r[4]) || 60, durasiText: r[5],
-                    rencanaAksi: r[6], kategori: r[7], kegiatan: r[8], hasilJumlah: r[9], hasilSatuan: r[10], photoName: r[11] !== '-' ? r[11] : null,
-                    photoDriveUrl: r[12] !== '-' ? r[12] : null, docName: r[13] !== '-' ? r[13] : null, docDriveUrl: r[14] !== '-' ? r[14] : null,
-                    folderPath: r[15], driveFolderUrl: r[16] !== '-' ? r[16] : null
+                appState.logs = (data.values || []).filter(r => r && r.length >= 2).map((r, i) => ({
+                    id: r[0] || `row-${i}`,
+                    tanggal: r[1] || '',
+                    jamMulai: r[2] || '',
+                    jamSelesai: r[3] || '',
+                    durasiMenit: parseInt(r[4], 10) || 0,
+                    durasiText: r[5] || '-',
+                    rencanaAksi: r[6] || '-',
+                    kategori: r[7] || '-',
+                    kegiatan: r[8] || '-',
+                    hasilJumlah: r[9] || '1',
+                    hasilSatuan: r[10] || 'Kegiatan',
+                    photoName: r[11] && r[11] !== '-' ? r[11] : null,
+                    photoDriveUrl: r[12] && r[12] !== '-' ? r[12] : null,
+                    docName: r[13] && r[13] !== '-' ? r[13] : null,
+                    docDriveUrl: r[14] && r[14] !== '-' ? r[14] : null,
+                    folderPath: r[15] || '',
+                    driveFolderUrl: r[16] && r[16] !== '-' ? r[16] : null
                 })).reverse();
+
+                updateDriveConnectionUI(true);
                 renderHistoryList();
-            } catch (e) {}
-        }
-
-        function handlePhotoSelected(e) {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            appState.currentPhoto.rawFile = file;
-            applyWatermarkToPhoto(file);
-        }
-
-        function applyWatermarkToPhoto(file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.getElementById('watermark-canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = img.width; canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-                    ctx.fillRect(0, canvas.height - 90, canvas.width, 90);
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = '28px sans-serif';
-                    ctx.fillText(`${document.getElementById('input-tanggal').value} • ${appState.profile.nama}`, 30, canvas.height - 40);
-                    appState.currentPhoto.watermarkedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                    canvas.toBlob(b => {
-                        appState.currentPhoto.watermarkedBlob = b;
-                        appState.currentPhoto.filename = `Foto_${Date.now()}.jpg`;
-                        document.getElementById('watermarked-preview-img').src = appState.currentPhoto.watermarkedDataUrl;
-                        document.getElementById('photo-preview-container').classList.remove('hidden');
-                        document.getElementById('photo-upload-buttons').classList.add('hidden');
-                    }, 'image/jpeg', 0.85);
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function removePhoto() {
-            appState.currentPhoto = { rawFile: null, watermarkedDataUrl: null, watermarkedBlob: null, filename: '' };
-            document.getElementById('photo-preview-container').classList.add('hidden');
-            document.getElementById('photo-upload-buttons').classList.remove('hidden');
-        }
-
-        function handleDocSelected(e) {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            appState.currentDoc.rawFile = file;
-            appState.currentDoc.filename = file.name;
-            document.getElementById('doc-filename-display').textContent = file.name;
-        }
-
-        async function findOrCreateDriveFolder(name, parentId = 'root') {
-            const token = appState.drive.accessToken;
-            const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`name='${name}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`)}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            if (data.files?.[0]) return data.files[0];
-
-            const cr = await fetch('https://www.googleapis.com/drive/v3/files', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId] })
-            });
-            return await cr.json();
-        }
-
-        async function uploadFileToDriveFolder(blob, name, folderId) {
-            const token = appState.drive.accessToken;
-            const form = new FormData();
-            form.append('metadata', new Blob([JSON.stringify({ name, parents: [folderId] })], { type: 'application/json' }));
-            form.append('file', blob, name);
-            const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: form
-            });
-            return await res.json();
-        }
-
-        async function handleSaveKinerja(event) {
-            event.preventDefault();
-            if (!isGoogleConnected()) {
-                showToast('Hubungkan akun Google terlebih dahulu!', 'error');
-                return;
-            }
-
-            const rencanaAksi = document.getElementById('input-rencana-aksi').value.trim();
-            const tanggal = document.getElementById('input-tanggal').value;
-            const jamMulai = document.getElementById('input-jam-mulai').value;
-            const jamSelesai = document.getElementById('input-jam-selesai').value;
-            const kegiatan = document.getElementById('input-kegiatan').value.trim();
-            const hasilJumlah = document.getElementById('input-hasil-jumlah').value.trim();
-            const hasilSatuan = document.getElementById('input-hasil-satuan').value.trim();
-            const kategori = document.querySelector('input[name="kategori"]:checked')?.value || 'Rapat';
-
-            if (!rencanaAksi) { showToast('Pilih Rencana Aksi.', 'error'); return; }
-
-            const durationInfo = calculateDurationInfo(jamMulai, jamSelesai);
-            const folderInfo = buildFolderPathInfo(tanggal);
-
-            const overlay = document.getElementById('upload-overlay');
-            overlay.classList.remove('hidden');
-
-            try {
-                const root = await findOrCreateDriveFolder('Kinerja_Harian', 'root');
-                const yr = await findOrCreateDriveFolder(folderInfo.year, root.id);
-                const mo = await findOrCreateDriveFolder(folderInfo.month, yr.id);
-                const dt = await findOrCreateDriveFolder(folderInfo.date, mo.id);
-
-                let photoDriveUrl = null;
-                if (appState.currentPhoto.watermarkedBlob) {
-                    const up = await uploadFileToDriveFolder(appState.currentPhoto.watermarkedBlob, appState.currentPhoto.filename, dt.id);
-                    photoDriveUrl = up.webViewLink || `https://drive.google.com/file/d/${up.id}/view`;
+                if (!isSilent) showToast(`Berhasil memuat ${appState.logs.length} riwayat kegiatan!`, 'success');
+            } catch (e) {
+                if (sheetDbLabel) {
+                    sheetDbLabel.className = 'text-[11px] font-medium text-amber-600 truncate';
+                    sheetDbLabel.textContent = 'Database: Terhubung (gagal sinkronisasi)';
                 }
-
-                let docDriveUrl = null;
-                if (appState.currentDoc.rawFile) {
-                    const up = await uploadFileToDriveFolder(appState.currentDoc.rawFile, appState.currentDoc.filename, dt.id);
-                    docDriveUrl = up.webViewLink || `https://drive.google.com/file/d/${up.id}/view`;
-                }
-
-                const newEntry = {
-                    id: 'log-' + Date.now(), tanggal, jamMulai, jamSelesai, durasiMenit: durationInfo.minutes, durasiText: durationInfo.text,
-                    rencanaAksi, kategori, kegiatan, hasilJumlah, hasilSatuan, folderPath: folderInfo.fullPath,
-                    photoName: appState.currentPhoto.filename, photoDriveUrl, docName: appState.currentDoc.filename, docDriveUrl,
-                    driveFolderUrl: dt.webViewLink, createdAt: new Date().toISOString()
-                };
-
-                await appendLogToGoogleSheet(newEntry);
-                appState.logs.unshift(newEntry);
-                overlay.classList.add('hidden');
-                showToast('Berhasil disimpan ke Google Sheets & Drive!', 'success');
-                switchTab('riwayat');
-            } catch (err) {
-                overlay.classList.add('hidden');
-                showToast('Gagal menyimpan: ' + err.message, 'error');
+                if (!isSilent) showToast('Gagal memuat data Sheet: ' + e.message, 'error');
             }
         }
 
         function renderHistoryList() {
             const container = document.getElementById('history-list-container');
             if (!container) return;
-            document.getElementById('stat-total').textContent = appState.logs.length;
+
+            const filteredLogs = getFilteredLogs();
+            const totalMinutes = filteredLogs.reduce((acc, item) => acc + (parseInt(item.durasiMenit, 10) || 0), 0);
+            const totalHours = Math.floor(totalMinutes / 60);
+            const remMinutes = totalMinutes % 60;
+
+            document.getElementById('stat-total').textContent = filteredLogs.length;
+            document.getElementById('stat-durasi').textContent = `${totalHours}j ${remMinutes}m`;
             document.getElementById('stat-drive').textContent = appState.logs.length;
-            if (appState.logs.length === 0) {
-                container.innerHTML = `<div class="bg-white rounded-3xl p-6 text-center text-slate-500 text-xs">Belum ada catatan kinerja.</div>`;
+
+            const navBadge = document.getElementById('nav-badge-count');
+            if (navBadge) {
+                if (appState.logs.length > 0) {
+                    navBadge.textContent = appState.logs.length > 99 ? '99+' : appState.logs.length;
+                    navBadge.classList.remove('hidden');
+                } else {
+                    navBadge.classList.add('hidden');
+                }
+            }
+
+            if (filteredLogs.length === 0) {
+                const awal = document.getElementById('filter-tanggal-awal')?.value;
+                const akhir = document.getElementById('filter-tanggal-akhir')?.value;
+                const emptyMsg = (awal || akhir)
+                    ? 'Tidak ada catatan kinerja pada rentang tanggal yang dipilih.'
+                    : (isGoogleConnected()
+                        ? 'Belum ada catatan kinerja tersimpan di Google Sheets.'
+                        : 'Hubungkan akun Google terlebih dahulu untuk memuat riwayat kegiatan.');
+                container.innerHTML = `<div class="bg-white rounded-3xl p-6 text-center text-slate-500 text-xs border border-slate-100 shadow-android">${emptyMsg}</div>`;
                 return;
             }
-            container.innerHTML = appState.logs.map(item => `
-                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-2">
+
+            container.innerHTML = filteredLogs.map(item => `
+                <div class="bg-white rounded-2xl p-4 shadow-android border border-slate-100 space-y-2">
                     <div class="flex justify-between items-center text-xs font-bold text-brand-600">
-                        <span>${item.tanggal} (${item.jamMulai} - ${item.jamSelesai})</span>
-                        <span class="text-slate-500">${item.durasiText}</span>
+                        <span class="flex items-center gap-1.5">
+                            <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                            ${escapeHtml(item.tanggal)} (${escapeHtml(item.jamMulai)} - ${escapeHtml(item.jamSelesai)})
+                        </span>
+                        <span class="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-semibold">${escapeHtml(item.durasiText)}</span>
                     </div>
-                    <p class="text-xs text-slate-800 font-medium">${escapeHtml(item.kegiatan)}</p>
-                    <div class="text-[10px] text-slate-500">Output: ${item.hasilJumlah} ${item.hasilSatuan}</div>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-100">${escapeHtml(item.kategori)}</span>
+                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">Output: ${escapeHtml(String(item.hasilJumlah))} ${escapeHtml(item.hasilSatuan)}</span>
+                    </div>
+                    <p class="text-xs text-slate-800 font-semibold leading-snug">${escapeHtml(item.kegiatan)}</p>
+                    ${item.rencanaAksi && item.rencanaAksi !== '-' ? `<p class="text-[10px] text-slate-500 bg-slate-50 p-2 rounded-xl border border-slate-100 leading-snug"><strong class="text-slate-600">Rencana Aksi:</strong> ${escapeHtml(item.rencanaAksi)}</p>` : ''}
+                    ${(item.photoDriveUrl || item.docDriveUrl || item.driveFolderUrl) ? `
+                        <div class="pt-1.5 border-t border-slate-100 flex items-center gap-2 flex-wrap">
+                            ${item.photoDriveUrl ? `<a href="${item.photoDriveUrl}" target="_blank" rel="noopener" class="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg flex items-center gap-1 hover:bg-blue-100"><i data-lucide="image" class="w-3 h-3"></i> Foto</a>` : ''}
+                            ${item.docDriveUrl ? `<a href="${item.docDriveUrl}" target="_blank" rel="noopener" class="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg flex items-center gap-1 hover:bg-indigo-100"><i data-lucide="file-text" class="w-3 h-3"></i> Dokumen</a>` : ''}
+                            ${item.driveFolderUrl ? `<a href="${item.driveFolderUrl}" target="_blank" rel="noopener" class="text-[10px] font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1 hover:bg-slate-200"><i data-lucide="folder" class="w-3 h-3"></i> Folder</a>` : ''}
+                        </div>
+                    ` : ''}
                 </div>
             `).join('');
 
@@ -1413,10 +1433,6 @@
                 }
             }, 50);
         }
-
-        function clearDateFilter() { renderHistoryList(); }
-        function exportToCSV() { showToast('Export CSV siap.', 'success'); }
-        function saveProfileSettings() { showToast('Profil disimpan.', 'success'); }
 
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
