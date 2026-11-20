@@ -119,21 +119,15 @@
                     <div>
                         <div class="flex items-center gap-1.5">
                             <h1 class="font-display font-bold text-lg tracking-tight leading-none">SiKinerja AI</h1>
-                            <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-white/20 text-white">v3.0</span>
+                            <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-white/20 text-white">v2.5</span>
                         </div>
                         <p id="header-user-info" class="text-xs text-indigo-100 mt-0.5">Riwanto, SKM • Staf Renvalkeu Dinkes Kota Tegal</p>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-1.5">
-                    <button type="button" onclick="openEmployeeLoginModal()" class="px-2.5 py-2 rounded-2xl bg-white/15 hover:bg-white/25 active:scale-95 transition flex items-center gap-1 text-[11px] font-semibold text-white" title="Ganti Akun / Login Pegawai">
-                        <i data-lucide="log-in" class="w-4 h-4 text-white"></i>
-                        <span class="hidden xs:inline">Akun</span>
-                    </button>
-                    <button type="button" onclick="switchTab('pengaturan')" class="p-2.5 rounded-2xl bg-white/15 hover:bg-white/25 active:scale-95 transition flex items-center justify-center relative" title="Pengaturan MySQL & Google Drive API">
-                        <i data-lucide="settings" class="w-5 h-5 text-white"></i>
-                    </button>
-                </div>
+                <button type="button" onclick="switchTab('pengaturan')" class="p-2.5 rounded-2xl bg-white/15 hover:bg-white/25 active:scale-95 transition flex items-center justify-center relative" title="Pengaturan Google Drive API">
+                    <i data-lucide="settings" class="w-5 h-5 text-white"></i>
+                </button>
             </div>
 
             <!-- Status Koneksi Pill -->
@@ -141,8 +135,8 @@
                 <div class="flex items-center gap-2 overflow-hidden">
                     <i data-lucide="hard-drive" id="drive-header-icon" class="w-4 h-4 text-rose-400 shrink-0"></i>
                     <div class="truncate">
-                        <span id="drive-mode-badge" class="text-xs font-semibold text-white block truncate">MySQL + Drive Pegawai</span>
-                        <span id="drive-account-sub" class="text-[10px] text-indigo-200 block truncate">Hubungkan Google Drive pegawai untuk unggah bukti</span>
+                        <span id="drive-mode-badge" class="text-xs font-semibold text-white block truncate">Belum Terhubung ke Google</span>
+                        <span id="drive-account-sub" class="text-[10px] text-indigo-200 block truncate">Wajib hubungkan Drive & Google Sheets sebelum input</span>
                     </div>
                 </div>
                 <button type="button" id="header-connect-btn" onclick="handleQuickDriveAction()" class="shrink-0 ml-2 text-[11px] font-semibold px-3 py-1.5 rounded-xl bg-white text-brand-700 hover:bg-indigo-50 active:scale-95 transition shadow-sm">
@@ -469,7 +463,7 @@
                         </button>
                     </div>
                     <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                        <span id="sheet-db-info-label" class="text-[11px] font-medium text-slate-600 truncate">Database MySQL: Belum terhubung</span>
+                        <span id="sheet-db-info-label" class="text-[11px] font-medium text-slate-600 truncate">Database: Belum terhubung</span>
                         <button type="button" onclick="fetchLogsFromGoogleSheet(false)" class="shrink-0 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold transition">Muat Ulang</button>
                     </div>
                 </div>
@@ -536,10 +530,10 @@
 
                     <div class="bg-brand-50/70 border border-brand-100 rounded-2xl p-3 text-xs text-brand-900 space-y-1">
                         <p class="font-bold flex items-center gap-1.5">
-                            <i data-lucide="info" class="w-4 h-4 text-brand-600"></i> Informasi Database MySQL & Bukti Google Drive:
+                            <i data-lucide="info" class="w-4 h-4 text-brand-600"></i> Informasi Database Google Sheets:
                         </p>
                         <p class="text-[11px] text-slate-600 leading-snug">
-                            Data log kinerja, profil pegawai, dan daftar Rencana Aksi disimpan terpusat di <strong class="text-slate-800">Database MySQL</strong>, sedangkan tautan dan file bukti dukung (foto ber-watermark & dokumen) diunggah langsung ke <strong class="text-slate-800">Google Drive masing-masing pegawai</strong>.
+                            File spreadsheet pusat bernama <strong class="text-slate-800">Database_SiKinerja_AI</strong> dibuat otomatis di dalam folder root <code>Kinerja_Harian</code> untuk merekam seluruh riwayat log kinerja Anda secara real-time.
                         </p>
                     </div>
                 </div>
@@ -548,43 +542,13 @@
             <!-- TAB 4: PENGATURAN API DRIVE -->
             <section id="tab-pengaturan" class="tab-content hidden space-y-4">
                 <div class="bg-white rounded-3xl p-4 shadow-android border border-slate-100 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <h3 class="font-display font-bold text-sm text-slate-800 flex items-center gap-2">
-                            <i data-lucide="user-cog" class="w-4 h-4 text-brand-600"></i> Identitas Pegawai Aktif
-                        </h3>
-                        <button type="button" onclick="openEmployeeLoginModal()" class="text-[11px] font-semibold text-brand-600 hover:underline flex items-center gap-1">
-                            <i data-lucide="users" class="w-3.5 h-3.5"></i> Login / Ganti Pegawai
-                        </button>
-                    </div>
+                    <h3 class="font-display font-bold text-sm text-slate-800 flex items-center gap-2">
+                        <i data-lucide="user-cog" class="w-4 h-4 text-brand-600"></i> Identitas Pegawai
+                    </h3>
                     <div class="space-y-2">
-                        <input type="text" id="set-nip" placeholder="NIP Pegawai" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono">
                         <input type="text" id="set-nama" value="Riwanto, SKM" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
                         <input type="text" id="set-jabatan" value="Staf Renvalkeu Dinkes Kota Tegal" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
-                        <button type="button" onclick="saveProfileSettings()" class="w-full py-2 rounded-xl bg-slate-800 text-white text-xs font-semibold">Simpan Profil ke MySQL</button>
-                    </div>
-                </div>
-
-                <!-- KONFIGURASI API MYSQL -->
-                <div class="bg-white rounded-3xl p-4 shadow-android border border-slate-100 space-y-3">
-                    <h3 class="font-display font-bold text-sm text-slate-800 flex items-center gap-2">
-                        <i data-lucide="database" class="w-4 h-4 text-emerald-600"></i> Konfigurasi Database MySQL (REST API)
-                    </h3>
-                    <p class="text-[11px] text-slate-500 leading-snug">
-                        Masukkan endpoint backend MySQL Anda (mendukung <code>GET /logs</code>, <code>POST /logs</code>, <code>PUT /employees/{nip}/rencana-aksi</code>). Jika endpoint dikosongkan, sistem menggunakan mode simulasi MySQL lokal untuk pengujian.
-                    </p>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">MySQL API Base URL</label>
-                        <input type="url" id="set-mysql-api-url" placeholder="https://api-kinerja.dinkestegal.go.id/api"
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">API Key / Bearer Token (Opsional)</label>
-                        <input type="password" id="set-mysql-api-key" placeholder="Masukkan token API MySQL jika ada"
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono">
-                    </div>
-                    <button type="button" onclick="saveMysqlConfig()" class="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition">Simpan & Uji Koneksi MySQL</button>
-                    <div id="mysql-status-box" class="text-[11px] p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800">
-                        MySQL: Mode Simulasi Lokal Aktif (Siap dihubungkan ke Server MySQL)
+                        <button type="button" onclick="saveProfileSettings()" class="w-full py-2 rounded-xl bg-slate-800 text-white text-xs font-semibold">Simpan Profil</button>
                     </div>
                 </div>
 
@@ -592,14 +556,14 @@
                 <div class="bg-white rounded-3xl p-4 shadow-android border border-slate-100 space-y-3">
                     <div class="flex items-center justify-between">
                         <h3 class="font-display font-bold text-sm text-slate-800 flex items-center gap-2">
-                            <i data-lucide="list-checks" class="w-4 h-4 text-brand-600"></i> Kelola Rencana Aksi Pegawai
+                            <i data-lucide="list-checks" class="w-4 h-4 text-brand-600"></i> Kelola Daftar Rencana Aksi
                         </h3>
                         <button type="button" onclick="resetDefaultRencanaAksi()" class="text-[11px] font-semibold text-slate-500 hover:text-brand-600">
                             Reset Default
                         </button>
                     </div>
                     <div class="flex gap-2">
-                        <input type="text" id="new-rencana-aksi-input" placeholder="Tambah uraian rencana aksi untuk pegawai ini..."
+                        <input type="text" id="new-rencana-aksi-input" placeholder="Tambah uraian rencana aksi baru..."
                             class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
                         <button type="button" onclick="addRencanaAksiItem()" class="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shrink-0">
                             Tambah
@@ -633,59 +597,6 @@
 
         <!-- TOAST NOTIFICATION -->
         <div id="toast-container" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm pointer-events-none flex flex-col gap-2"></div>
-
-        <!-- MODAL LOGIN PEGAWAI -->
-        <div id="employee-login-modal" class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-3xl p-5 max-w-sm w-full shadow-2xl space-y-4 border border-slate-100">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                    <div class="flex items-center gap-2">
-                        <span class="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
-                            <i data-lucide="user-check" class="w-4 h-4"></i>
-                        </span>
-                        <div>
-                            <h3 class="font-display font-bold text-sm text-slate-800">Login Pegawai</h3>
-                            <p class="text-[10px] text-slate-500">Rencana Aksi & Google Drive per Pegawai</p>
-                        </div>
-                    </div>
-                    <button type="button" onclick="closeEmployeeLoginModal()" class="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700">
-                        <i data-lucide="x" class="w-4 h-4"></i>
-                    </button>
-                </div>
-
-                <div>
-                    <label class="block text-[11px] font-semibold text-slate-600 mb-1.5">Pilih Akun Pegawai Terdaftar</label>
-                    <select id="login-employee-select" onchange="onSelectPresetEmployee()"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800">
-                    </select>
-                </div>
-
-                <form onsubmit="handleEmployeeLoginSubmit(event)" class="space-y-2.5">
-                    <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">NIP Pegawai</label>
-                        <input type="text" id="login-nip-input" required placeholder="Contoh: 198501012010011001"
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nama Lengkap & Gelar</label>
-                        <input type="text" id="login-nama-input" required placeholder="Nama Pegawai"
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Jabatan / Unit Kerja</label>
-                        <input type="text" id="login-jabatan-input" required placeholder="Jabatan Pegawai"
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">PIN / Password Aplikasi</label>
-                        <input type="password" id="login-pin-input" required placeholder="Masukkan PIN (default: 1234)"
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono">
-                    </div>
-                    <button type="submit" class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md transition">
-                        Masuk ke Akun Pegawai
-                    </button>
-                </form>
-            </div>
-        </div>
 
         <!-- LOADING OVERLAY SAAT MENYIMPAN -->
         <div id="upload-overlay" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-6 text-center text-white">
@@ -737,8 +648,6 @@
 
     <script>
         const STORAGE_KEY_CONFIG = 'sikinerja_ai_config_v1';
-        const STORAGE_KEY_EMPLOYEES = 'sikinerja_ai_employees_v1';
-        const STORAGE_KEY_MYSQL_LOGS = 'sikinerja_ai_mysql_logs_v1';
         const SPREADSHEET_FILE_NAME = 'Database_SiKinerja_AI';
         const SHEET_TAB_NAME = 'Log_Kinerja';
 
@@ -757,45 +666,9 @@
             'Mengumpulkan, menganalisa dan menyusun dokumen Penilaian SAKIP'
         ];
 
-        const PRESET_EMPLOYEES = [
-            {
-                nip: '198604122011011005',
-                nama: 'Riwanto, SKM',
-                jabatan: 'Staf Renvalkeu Dinkes Kota Tegal',
-                pin: '1234',
-                rencanaAksiList: [...DEFAULT_RENCANA_AKSI]
-            },
-            {
-                nip: '198908172014022002',
-                nama: 'dr. Sinta Wulandari, M.Kes',
-                jabatan: 'Analis Kebijakan Ahli Muda Kesehatan Masyarakat',
-                pin: '1234',
-                rencanaAksiList: [
-                    'Melaksanakan koordinasi lintas sektor pencegahan dan pengendalian penyakit menular',
-                    'Menyusun kajian analisis kebijakan pelayanan kesehatan primer',
-                    'Melakukan monitoring dan evaluasi capaian SPM bidang kesehatan',
-                    'Melaksanakan penugasan kedinasan berdasarkan arahan pimpinan untuk mendukung pelaksanaan tugas organisasi'
-                ]
-            },
-            {
-                nip: '199203212018011003',
-                nama: 'Budi Santoso, S.Kom',
-                jabatan: 'Pranata Komputer Ahli Pertama Dinkes Kota Tegal',
-                pin: '1234',
-                rencanaAksiList: [
-                    'Mengembangkan dan memelihara sistem informasi pelaporan kinerja digital',
-                    'Mengelola basis data kesehatan dan integrasi Open Data daerah',
-                    'Melaksanakan dukungan teknis keamanan jaringan dan aplikasi puskesmas',
-                    'Menyusun dokumentasi teknis dan laporan pemeliharaan TI berkala'
-                ]
-            }
-        ];
-
         let appState = {
-            profile: { nip: '198604122011011005', nama: 'Riwanto, SKM', jabatan: 'Staf Renvalkeu Dinkes Kota Tegal' },
-            employees: JSON.parse(JSON.stringify(PRESET_EMPLOYEES)),
+            profile: { nama: 'Riwanto, SKM', jabatan: 'Staf Renvalkeu Dinkes Kota Tegal' },
             rencanaAksiList: [...DEFAULT_RENCANA_AKSI],
-            mysql: { apiUrl: '', apiKey: '' },
             drive: { clientId: '', spreadsheetId: '', spreadsheetUrl: '', accessToken: null, tokenExpiry: 0, isLive: false },
             currentPhoto: { rawFile: null, watermarkedDataUrl: null, watermarkedBlob: null, filename: '' },
             currentDoc: { rawFile: null, filename: '' },
@@ -813,7 +686,12 @@
             updateFolderPreview();
             initSpeechRecognition();
 
-            fetchLogsFromGoogleSheet(true);
+            if (isGoogleConnected()) {
+                updateDriveConnectionUI(true);
+                fetchLogsFromGoogleSheet(true);
+            } else {
+                renderHistoryList();
+            }
 
             setTimeout(() => {
                 if (window.lucide && typeof lucide.createIcons === 'function') {
@@ -856,22 +734,11 @@
             if (originEl) originEl.textContent = window.location.origin;
 
             try {
-                const savedEmp = localStorage.getItem(STORAGE_KEY_EMPLOYEES);
-                if (savedEmp) {
-                    const parsedEmp = JSON.parse(savedEmp);
-                    if (Array.isArray(parsedEmp) && parsedEmp.length > 0) {
-                        appState.employees = parsedEmp;
-                    }
-                }
-            } catch (e) {}
-
-            try {
                 const raw = localStorage.getItem(STORAGE_KEY_CONFIG);
                 if (raw) {
                     const parsed = JSON.parse(raw);
                     if (parsed.profile) appState.profile = { ...appState.profile, ...parsed.profile };
                     if (parsed.rencanaAksiList) appState.rencanaAksiList = parsed.rencanaAksiList;
-                    if (parsed.mysql) appState.mysql = { ...appState.mysql, ...parsed.mysql };
                     if (parsed.drive) {
                         appState.drive.clientId = parsed.drive.clientId || '';
                         appState.drive.spreadsheetId = parsed.drive.spreadsheetId || '';
@@ -879,179 +746,12 @@
                 }
             } catch (e) {}
 
-            syncEmployeeIntoDirectory();
-            applyActiveProfileToUI();
-            if (appState.drive.clientId) document.getElementById('set-client-id').value = appState.drive.clientId;
-            document.getElementById('set-mysql-api-url').value = appState.mysql.apiUrl || '';
-            document.getElementById('set-mysql-api-key').value = appState.mysql.apiKey || '';
-            updateMysqlStatusBox();
-
-            renderRencanaAksiDropdown();
-        }
-
-        function syncEmployeeIntoDirectory() {
-            const idx = appState.employees.findIndex(e => e.nip === appState.profile.nip);
-            if (idx >= 0) {
-                appState.employees[idx].nama = appState.profile.nama;
-                appState.employees[idx].jabatan = appState.profile.jabatan;
-                appState.employees[idx].rencanaAksiList = [...appState.rencanaAksiList];
-            } else {
-                appState.employees.unshift({
-                    nip: appState.profile.nip || 'PEGAWAI-' + Date.now(),
-                    nama: appState.profile.nama,
-                    jabatan: appState.profile.jabatan,
-                    pin: '1234',
-                    rencanaAksiList: [...appState.rencanaAksiList]
-                });
-            }
-            try {
-                localStorage.setItem(STORAGE_KEY_EMPLOYEES, JSON.stringify(appState.employees));
-            } catch (e) {}
-        }
-
-        function applyActiveProfileToUI() {
-            const nipEl = document.getElementById('set-nip');
-            const namaEl = document.getElementById('set-nama');
-            const jabEl = document.getElementById('set-jabatan');
-            if (nipEl) nipEl.value = appState.profile.nip || '';
-            if (namaEl) namaEl.value = appState.profile.nama || '';
-            if (jabEl) jabEl.value = appState.profile.jabatan || '';
+            document.getElementById('set-nama').value = appState.profile.nama;
+            document.getElementById('set-jabatan').value = appState.profile.jabatan;
             document.getElementById('header-user-info').textContent = `${appState.profile.nama} • ${appState.profile.jabatan}`;
-        }
+            if (appState.drive.clientId) document.getElementById('set-client-id').value = appState.drive.clientId;
 
-        function openEmployeeLoginModal() {
-            const selectEl = document.getElementById('login-employee-select');
-            if (selectEl) {
-                selectEl.innerHTML = appState.employees.map((emp, idx) =>
-                    `<option value="${idx}" ${emp.nip === appState.profile.nip ? 'selected' : ''}>${escapeHtml(emp.nama)} (${escapeHtml(emp.nip)})</option>`
-                ).join('');
-            }
-            document.getElementById('login-nip-input').value = appState.profile.nip || '';
-            document.getElementById('login-nama-input').value = appState.profile.nama || '';
-            document.getElementById('login-jabatan-input').value = appState.profile.jabatan || '';
-            document.getElementById('login-pin-input').value = '1234';
-
-            document.getElementById('employee-login-modal').classList.remove('hidden');
-            setTimeout(() => {
-                if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
-            }, 50);
-        }
-
-        function closeEmployeeLoginModal() {
-            document.getElementById('employee-login-modal').classList.add('hidden');
-        }
-
-        function onSelectPresetEmployee() {
-            const idx = parseInt(document.getElementById('login-employee-select').value, 10);
-            const emp = appState.employees[idx];
-            if (!emp) return;
-            document.getElementById('login-nip-input').value = emp.nip;
-            document.getElementById('login-nama-input').value = emp.nama;
-            document.getElementById('login-jabatan-input').value = emp.jabatan;
-            document.getElementById('login-pin-input').value = emp.pin || '1234';
-        }
-
-        function handleEmployeeLoginSubmit(event) {
-            event.preventDefault();
-            const nip = document.getElementById('login-nip-input').value.trim();
-            const nama = document.getElementById('login-nama-input').value.trim();
-            const jabatan = document.getElementById('login-jabatan-input').value.trim();
-            const pin = document.getElementById('login-pin-input').value.trim();
-
-            if (!nip || !nama || !jabatan) {
-                showToast('Lengkapi NIP, Nama, dan Jabatan pegawai.', 'error');
-                return;
-            }
-
-            let existing = appState.employees.find(e => e.nip === nip);
-            if (existing) {
-                if (existing.pin && pin !== existing.pin) {
-                    showToast('PIN pegawai tidak sesuai.', 'error');
-                    return;
-                }
-                existing.nama = nama;
-                existing.jabatan = jabatan;
-                appState.rencanaAksiList = Array.isArray(existing.rencanaAksiList) && existing.rencanaAksiList.length > 0
-                    ? [...existing.rencanaAksiList]
-                    : [...DEFAULT_RENCANA_AKSI];
-            } else {
-                const newEmp = {
-                    nip,
-                    nama,
-                    jabatan,
-                    pin: pin || '1234',
-                    rencanaAksiList: [...DEFAULT_RENCANA_AKSI]
-                };
-                appState.employees.push(newEmp);
-                appState.rencanaAksiList = [...newEmp.rencanaAksiList];
-            }
-
-            appState.profile = { nip, nama, jabatan };
-            saveConfigToLocalStorage();
-            applyActiveProfileToUI();
             renderRencanaAksiDropdown();
-            closeEmployeeLoginModal();
-            fetchLogsFromGoogleSheet(true);
-            showToast(`Login berhasil: ${nama}`, 'success');
-        }
-
-        function updateMysqlStatusBox() {
-            const box = document.getElementById('mysql-status-box');
-            if (!box) return;
-            if (appState.mysql.apiUrl) {
-                box.className = 'text-[11px] p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800';
-                box.innerHTML = `MySQL Terhubung ke API: <strong class="font-mono">${escapeHtml(appState.mysql.apiUrl)}</strong>`;
-            } else {
-                box.className = 'text-[11px] p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-800';
-                box.innerHTML = 'MySQL: <strong>Mode Simulasi Lokal Aktif</strong> (Data dipisah per NIP pegawai di MySQL store)';
-            }
-        }
-
-        async function saveMysqlConfig() {
-            const apiUrl = document.getElementById('set-mysql-api-url').value.trim().replace(/\/+$/, '');
-            const apiKey = document.getElementById('set-mysql-api-key').value.trim();
-            appState.mysql = { apiUrl, apiKey };
-            saveConfigToLocalStorage();
-            updateMysqlStatusBox();
-
-            if (!apiUrl) {
-                showToast('Konfigurasi MySQL lokal disimpan.', 'success');
-                return;
-            }
-
-            try {
-                const headers = { 'Content-Type': 'application/json' };
-                if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-                const res = await fetch(`${apiUrl}/health`, { headers });
-                if (res.ok) {
-                    showToast('Koneksi ke server database MySQL berhasil!', 'success');
-                } else {
-                    showToast('URL MySQL tersimpan (menunggu endpoint /health aktif).', 'info');
-                }
-            } catch (e) {
-                showToast('URL MySQL disimpan. Pastikan CORS & endpoint API aktif.', 'info');
-            }
-        }
-
-        function getMysqlHeaders() {
-            const headers = { 'Content-Type': 'application/json' };
-            if (appState.mysql.apiKey) headers['Authorization'] = `Bearer ${appState.mysql.apiKey}`;
-            return headers;
-        }
-
-        function readLocalMysqlLogs() {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY_MYSQL_LOGS);
-                return raw ? JSON.parse(raw) : [];
-            } catch (e) {
-                return [];
-            }
-        }
-
-        function writeLocalMysqlLogs(allLogs) {
-            try {
-                localStorage.setItem(STORAGE_KEY_MYSQL_LOGS, JSON.stringify(allLogs));
-            } catch (e) {}
         }
 
         function renderRencanaAksiDropdown() {
@@ -1071,7 +771,7 @@
             const listEl = document.getElementById('rencana-aksi-manage-list');
             if (!listEl) return;
             if (appState.rencanaAksiList.length === 0) {
-                listEl.innerHTML = `<p class="text-[11px] text-slate-400 text-center py-2">Daftar Rencana Aksi kosong untuk pegawai ini.</p>`;
+                listEl.innerHTML = `<p class="text-[11px] text-slate-400 text-center py-2">Daftar Rencana Aksi kosong.</p>`;
                 return;
             }
             listEl.innerHTML = appState.rencanaAksiList.map((item, idx) => `
@@ -1087,28 +787,11 @@
             }, 30);
         }
 
-        async function syncRencanaAksiToMysql() {
-            syncEmployeeIntoDirectory();
-            if (!appState.mysql.apiUrl || !appState.profile.nip) return;
-            try {
-                await fetch(`${appState.mysql.apiUrl}/employees/${encodeURIComponent(appState.profile.nip)}/rencana-aksi`, {
-                    method: 'PUT',
-                    headers: getMysqlHeaders(),
-                    body: JSON.stringify({
-                        nip: appState.profile.nip,
-                        rencanaAksiList: appState.rencanaAksiList
-                    })
-                });
-            } catch (e) {}
-        }
-
         function saveConfigToLocalStorage() {
-            syncEmployeeIntoDirectory();
             try {
                 localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify({
                     profile: appState.profile,
                     rencanaAksiList: appState.rencanaAksiList,
-                    mysql: appState.mysql,
                     drive: {
                         clientId: appState.drive.clientId,
                         spreadsheetId: appState.drive.spreadsheetId
@@ -1127,15 +810,13 @@
             appState.rencanaAksiList.push(val);
             inputEl.value = '';
             saveConfigToLocalStorage();
-            syncRencanaAksiToMysql();
             renderRencanaAksiDropdown();
-            showToast('Rencana Aksi ditambahkan untuk pegawai aktif!', 'success');
+            showToast('Rencana Aksi berhasil ditambahkan!', 'success');
         }
 
         function removeRencanaAksiItem(index) {
             appState.rencanaAksiList.splice(index, 1);
             saveConfigToLocalStorage();
-            syncRencanaAksiToMysql();
             renderRencanaAksiDropdown();
             showToast('Item Rencana Aksi dihapus.', 'info');
         }
@@ -1143,7 +824,6 @@
         function resetDefaultRencanaAksi() {
             appState.rencanaAksiList = [...DEFAULT_RENCANA_AKSI];
             saveConfigToLocalStorage();
-            syncRencanaAksiToMysql();
             renderRencanaAksiDropdown();
             showToast('Daftar Rencana Aksi dikembalikan ke default.', 'success');
         }
@@ -1240,16 +920,12 @@
         }
 
         function saveProfileSettings() {
-            const nip = document.getElementById('set-nip')?.value.trim() || appState.profile.nip;
             const nama = document.getElementById('set-nama').value.trim();
             const jabatan = document.getElementById('set-jabatan').value.trim();
-            if (nip) appState.profile.nip = nip;
             if (nama) appState.profile.nama = nama;
             if (jabatan) appState.profile.jabatan = jabatan;
             document.getElementById('header-user-info').textContent = `${appState.profile.nama} • ${appState.profile.jabatan}`;
             saveConfigToLocalStorage();
-            syncRencanaAksiToMysql();
-            fetchLogsFromGoogleSheet(true);
             showToast('Profil pegawai disimpan!', 'success');
         }
 
@@ -1482,29 +1158,30 @@
 
             if (isLive) {
                 dot.className = 'absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-brand-700';
-                badge.textContent = 'Google Drive Pegawai Terhubung';
-                sub.textContent = `Bukti ke Drive: ${appState.profile.nama}`;
+                badge.textContent = 'Terhubung ke Google Drive & Sheets';
+                sub.textContent = 'Database aktif';
                 btn.textContent = 'Aktif';
                 btn.className = 'shrink-0 ml-2 text-[11px] font-semibold px-3 py-1.5 rounded-xl bg-emerald-500 text-white shadow-sm';
                 statusBox.className = 'text-[11px] p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800';
                 statusBox.innerHTML = 'Status: <strong>TERHUBUNG</strong>';
                 if (banner) banner.classList.add('hidden');
+                if (sheetDbLabel) {
+                    sheetDbLabel.className = 'text-[11px] font-semibold text-emerald-700 truncate';
+                    sheetDbLabel.textContent = `Database: Terhubung (${SPREADSHEET_FILE_NAME})`;
+                }
             } else {
                 dot.className = 'absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-rose-500 border-2 border-brand-700';
-                badge.textContent = 'Google Drive Pegawai Belum Terhubung';
-                sub.textContent = 'Hubungkan Drive pegawai untuk unggah bukti';
+                badge.textContent = 'Belum Terhubung ke Google';
+                sub.textContent = 'Wajib hubungkan Drive sebelum input';
                 btn.textContent = 'Hubungkan';
                 btn.className = 'shrink-0 ml-2 text-[11px] font-semibold px-3 py-1.5 rounded-xl bg-white text-brand-700 shadow-sm';
                 statusBox.className = 'text-[11px] p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700';
                 statusBox.innerHTML = 'Status: <strong>Belum Terhubung</strong>';
                 if (banner) banner.classList.remove('hidden');
-            }
-
-            if (sheetDbLabel) {
-                sheetDbLabel.className = 'text-[11px] font-semibold text-emerald-700 truncate';
-                sheetDbLabel.textContent = appState.mysql.apiUrl
-                    ? `Database MySQL: Terhubung (${appState.profile.nip})`
-                    : `Database MySQL (Lokal): Aktif • NIP ${appState.profile.nip}`;
+                if (sheetDbLabel) {
+                    sheetDbLabel.className = 'text-[11px] font-medium text-rose-600 truncate';
+                    sheetDbLabel.textContent = 'Database: Belum terhubung';
+                }
             }
         }
 
@@ -1808,31 +1485,22 @@
         }
 
         async function appendLogToGoogleSheet(entry) {
-            const payload = {
-                ...entry,
-                pegawaiNip: appState.profile.nip,
-                pegawaiNama: appState.profile.nama,
-                pegawaiJabatan: appState.profile.jabatan
-            };
-
-            if (appState.mysql.apiUrl) {
-                const res = await fetch(`${appState.mysql.apiUrl}/logs`, {
-                    method: 'POST',
-                    headers: getMysqlHeaders(),
-                    body: JSON.stringify(payload)
-                });
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status} saat menyimpan ke MySQL`);
-                }
-            }
-
-            const allLogs = readLocalMysqlLogs();
-            allLogs.unshift(payload);
-            writeLocalMysqlLogs(allLogs);
+            const token = appState.drive.accessToken;
+            const sheetId = await ensureDatabaseSpreadsheet();
+            await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(SHEET_TAB_NAME + '!A:S')}:append?valueInputOption=USER_ENTERED`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ values: [[entry.id, entry.tanggal, entry.jamMulai, entry.jamSelesai, entry.durasiMenit, entry.durasiText, entry.rencanaAksi, entry.kategori, entry.kegiatan, entry.hasilJumlah, entry.hasilSatuan, entry.photoName || '-', entry.photoDriveUrl || '-', entry.docName || '-', entry.docDriveUrl || '-', entry.folderPath, entry.driveFolderUrl || '-', `${appState.profile.nama} (${appState.profile.jabatan})`, entry.createdAt]] })
+            });
         }
 
         async function handleSaveKinerja(event) {
             event.preventDefault();
+            if (!isGoogleConnected()) {
+                showToast('Hubungkan akun Google terlebih dahulu pada tab API Drive!', 'error');
+                switchTab('pengaturan');
+                return;
+            }
 
             const rencanaAksi = document.getElementById('input-rencana-aksi').value;
             const tanggal = document.getElementById('input-tanggal').value;
@@ -1855,46 +1523,33 @@
             }
 
             try {
-                showLoadingOverlay('Menyiapkan Penyimpanan', 'Menyiapkan data MySQL & Google Drive pegawai...', 20);
-                const info = buildFolderPathInfo(tanggal);
+                showLoadingOverlay('Menyiapkan Penyimpanan', 'Memeriksa folder Google Drive...', 20);
+                const token = appState.drive.accessToken;
 
-                let folderPath = info.fullPath;
-                let driveFolderUrl = null;
+                showLoadingOverlay('Membuat Struktur Folder', 'Membuat folder /Kinerja_Harian/Tahun/Bulan/Tanggal/...', 45);
+                const folderInfo = await ensureDriveFolderHierarchy(token, tanggal);
+
                 let photoName = null;
                 let photoDriveUrl = null;
-                let docName = null;
-                let docDriveUrl = null;
-
-                if (isGoogleConnected()) {
-                    const token = appState.drive.accessToken;
-                    showLoadingOverlay('Membuat Struktur Folder Drive', 'Membuat folder di Google Drive pegawai...', 45);
-                    const folderInfo = await ensureDriveFolderHierarchy(token, tanggal);
-                    folderPath = folderInfo.folderPath;
-                    driveFolderUrl = folderInfo.folderUrl;
-
-                    if (appState.currentPhoto.watermarkedBlob) {
-                        showLoadingOverlay('Mengunggah Foto ke Drive', 'Mengunggah bukti foto ke Google Drive pegawai...', 65);
-                        const pRes = await uploadFileToDrive(token, appState.currentPhoto.watermarkedBlob, appState.currentPhoto.filename, 'image/jpeg', folderInfo.folderId);
-                        photoName = appState.currentPhoto.filename;
-                        photoDriveUrl = pRes.fileUrl;
-                    }
-
-                    if (appState.currentDoc.rawFile) {
-                        showLoadingOverlay('Mengunggah Dokumen ke Drive', 'Mengunggah dokumen ke Google Drive pegawai...', 80);
-                        const dRes = await uploadFileToDrive(token, appState.currentDoc.rawFile, appState.currentDoc.filename, appState.currentDoc.rawFile.type, folderInfo.folderId);
-                        docName = appState.currentDoc.filename;
-                        docDriveUrl = dRes.fileUrl;
-                    }
-                } else {
-                    if (appState.currentPhoto.watermarkedBlob) photoName = appState.currentPhoto.filename;
-                    if (appState.currentDoc.rawFile) docName = appState.currentDoc.filename;
+                if (appState.currentPhoto.watermarkedBlob) {
+                    showLoadingOverlay('Mengunggah Foto', 'Mengunggah bukti foto ber-watermark ke Google Drive...', 65);
+                    const pRes = await uploadFileToDrive(token, appState.currentPhoto.watermarkedBlob, appState.currentPhoto.filename, 'image/jpeg', folderInfo.folderId);
+                    photoName = appState.currentPhoto.filename;
+                    photoDriveUrl = pRes.fileUrl;
                 }
 
-                showLoadingOverlay('Menyimpan ke Database MySQL', 'Mencatat log kinerja ke MySQL...', 90);
+                let docName = null;
+                let docDriveUrl = null;
+                if (appState.currentDoc.rawFile) {
+                    showLoadingOverlay('Mengunggah Dokumen', 'Mengunggah file dokumen pendukung...', 80);
+                    const dRes = await uploadFileToDrive(token, appState.currentDoc.rawFile, appState.currentDoc.filename, appState.currentDoc.rawFile.type, folderInfo.folderId);
+                    docName = appState.currentDoc.filename;
+                    docDriveUrl = dRes.fileUrl;
+                }
+
+                showLoadingOverlay('Menyimpan ke Google Sheets', 'Mencatat log kinerja ke database...', 90);
                 const entry = {
                     id: 'LOG-' + Date.now(),
-                    pegawaiNip: appState.profile.nip,
-                    pegawaiNama: appState.profile.nama,
                     tanggal,
                     jamMulai,
                     jamSelesai,
@@ -1909,17 +1564,17 @@
                     photoDriveUrl,
                     docName,
                     docDriveUrl,
-                    folderPath,
-                    driveFolderUrl,
+                    folderPath: folderInfo.folderPath,
+                    driveFolderUrl: folderInfo.folderUrl,
                     createdAt: new Date().toISOString()
                 };
 
                 await appendLogToGoogleSheet(entry);
 
-                showLoadingOverlay('Selesai!', 'Data tersimpan di MySQL & bukti di Drive pegawai!', 100);
+                showLoadingOverlay('Selesai!', 'Data berhasil disimpan!', 100);
                 setTimeout(() => hideLoadingOverlay(), 800);
 
-                showToast('Log kinerja disimpan ke MySQL & bukti ke Google Drive pegawai!', 'success');
+                showToast('Log kinerja berhasil disimpan ke Google Sheets & Drive!', 'success');
                 document.getElementById('kinerja-form').reset();
                 removePhoto();
                 document.getElementById('doc-filename-display').textContent = 'Lampirkan File Dokumen';
@@ -1933,54 +1588,66 @@
         }
 
         async function fetchLogsFromGoogleSheet(isSilent = false) {
+            if (!isGoogleConnected()) {
+                updateDriveConnectionUI(false);
+                if (!isSilent) showToast('Hubungkan akun Google terlebih dahulu.', 'error');
+                return;
+            }
             const sheetDbLabel = document.getElementById('sheet-db-info-label');
-            if (sheetDbLabel) sheetDbLabel.textContent = 'Database MySQL: Memuat data pegawai...';
+            if (sheetDbLabel) sheetDbLabel.textContent = 'Database: Memuat data dari Sheet...';
 
             try {
-                let employeeLogs = [];
+                const token = appState.drive.accessToken;
+                const sheetId = await ensureDatabaseSpreadsheet();
+                let res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(SHEET_TAB_NAME + '!A2:S')}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
 
-                if (appState.mysql.apiUrl) {
-                    const res = await fetch(`${appState.mysql.apiUrl}/logs?nip=${encodeURIComponent(appState.profile.nip)}`, {
-                        headers: getMysqlHeaders()
+                if (!res.ok && res.status === 400) {
+                    res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent('Sheet1!A2:S')}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
                     });
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    const data = await res.json();
-                    const rows = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
-                    employeeLogs = rows.map((r, i) => ({
-                        id: r.id || `row-${i}`,
-                        pegawaiNip: r.pegawaiNip || r.nip || appState.profile.nip,
-                        tanggal: r.tanggal || '',
-                        jamMulai: r.jamMulai || r.jam_mulai || '',
-                        jamSelesai: r.jamSelesai || r.jam_selesai || '',
-                        durasiMenit: parseInt(r.durasiMenit ?? r.durasi_menit, 10) || 0,
-                        durasiText: r.durasiText || r.durasi_teks || '-',
-                        rencanaAksi: r.rencanaAksi || r.rencana_aksi || '-',
-                        kategori: r.kategori || '-',
-                        kegiatan: r.kegiatan || '-',
-                        hasilJumlah: r.hasilJumlah ?? r.hasil_jumlah ?? '1',
-                        hasilSatuan: r.hasilSatuan || r.hasil_satuan || 'Kegiatan',
-                        photoName: r.photoName || r.foto_nama || null,
-                        photoDriveUrl: r.photoDriveUrl || r.url_foto || null,
-                        docName: r.docName || r.dokumen_nama || null,
-                        docDriveUrl: r.docDriveUrl || r.url_dokumen || null,
-                        folderPath: r.folderPath || r.folder_path || '',
-                        driveFolderUrl: r.driveFolderUrl || r.url_folder || null
-                    }));
-                } else {
-                    const allLocal = readLocalMysqlLogs();
-                    employeeLogs = allLocal.filter(item => !item.pegawaiNip || item.pegawaiNip === appState.profile.nip);
                 }
 
-                appState.logs = employeeLogs;
-                updateDriveConnectionUI(isGoogleConnected());
+                if (res.status === 401) {
+                    appState.drive.accessToken = null;
+                    appState.drive.isLive = false;
+                    localStorage.removeItem('sikinerja_permanent_token');
+                    updateDriveConnectionUI(false);
+                    if (!isSilent) showToast('Sesi Google berakhir, silakan hubungkan ulang.', 'error');
+                    return;
+                }
+
+                const data = await res.json();
+                appState.logs = (data.values || []).filter(r => r && r.length >= 2).map((r, i) => ({
+                    id: r[0] || `row-${i}`,
+                    tanggal: r[1] || '',
+                    jamMulai: r[2] || '',
+                    jamSelesai: r[3] || '',
+                    durasiMenit: parseInt(r[4], 10) || 0,
+                    durasiText: r[5] || '-',
+                    rencanaAksi: r[6] || '-',
+                    kategori: r[7] || '-',
+                    kegiatan: r[8] || '-',
+                    hasilJumlah: r[9] || '1',
+                    hasilSatuan: r[10] || 'Kegiatan',
+                    photoName: r[11] && r[11] !== '-' ? r[11] : null,
+                    photoDriveUrl: r[12] && r[12] !== '-' ? r[12] : null,
+                    docName: r[13] && r[13] !== '-' ? r[13] : null,
+                    docDriveUrl: r[14] && r[14] !== '-' ? r[14] : null,
+                    folderPath: r[15] || '',
+                    driveFolderUrl: r[16] && r[16] !== '-' ? r[16] : null
+                })).reverse();
+
+                updateDriveConnectionUI(true);
                 renderHistoryList();
-                if (!isSilent) showToast(`Memuat ${appState.logs.length} riwayat MySQL (${appState.profile.nama}).`, 'success');
+                if (!isSilent) showToast(`Berhasil memuat ${appState.logs.length} riwayat kegiatan!`, 'success');
             } catch (e) {
-                const allLocal = readLocalMysqlLogs();
-                appState.logs = allLocal.filter(item => !item.pegawaiNip || item.pegawaiNip === appState.profile.nip);
-                updateDriveConnectionUI(isGoogleConnected());
-                renderHistoryList();
-                if (!isSilent) showToast('Gagal memuat MySQL API, menampilkan cache lokal: ' + e.message, 'error');
+                if (sheetDbLabel) {
+                    sheetDbLabel.className = 'text-[11px] font-medium text-amber-600 truncate';
+                    sheetDbLabel.textContent = 'Database: Terhubung (gagal sinkronisasi)';
+                }
+                if (!isSilent) showToast('Gagal memuat data Sheet: ' + e.message, 'error');
             }
         }
 
@@ -2012,9 +1679,11 @@
                 const akhir = document.getElementById('filter-tanggal-akhir')?.value;
                 const today = getTodayDateString();
                 const isTodayOnly = (awal === today && akhir === today);
-                const emptyMsg = isTodayOnly
-                    ? `Belum ada catatan kinerja untuk ${appState.profile.nama} pada hari ini (${today}).`
-                    : 'Tidak ada catatan kinerja pada rentang tanggal yang dipilih.';
+                const emptyMsg = !isGoogleConnected()
+                    ? 'Hubungkan akun Google terlebih dahulu untuk memuat riwayat kegiatan.'
+                    : isTodayOnly
+                        ? 'Belum ada catatan kinerja untuk hari ini (' + today + ').'
+                        : 'Tidak ada catatan kinerja pada rentang tanggal yang dipilih.';
                 container.innerHTML = `<div class="bg-white rounded-3xl p-6 text-center text-slate-500 text-xs border border-slate-100 shadow-android">${emptyMsg}</div>`;
                 return;
             }
